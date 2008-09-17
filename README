@@ -1,0 +1,14 @@
+Notes:
+
+* Kernels prior to 2.6.22 do not support poll() on /dev/mcelog.  In that
+  case, the polling intervals of the kernel and of mced will limit the
+  rate at which MCEs can be logged.  To get better resolution, decrease
+  these intervals.
+
+* Not every system tracks a "current boot number".  For those that do, the
+  -b (--bootnum) option can be used.  Tracking a boot number can help to
+  identify crashes that might be related to MCEs.
+
+* mced does not try to decode MCEs.  If you want that, you should try
+  Andi Kleen's mcelog tool (http://freshmeat.net/projects/mcelog/) or the
+  simple generic MCE decoder included in this package (mce_decode).

@@ -1,0 +1,5 @@
+%changelog
+* Thu May 24 2007  Tim Hockin <thockin@hockin.org>
+  - Initial import.
+* Tue Sep 16 2008  Tim Hockin <thockin@google.com>
+  - Use rules.mk.
