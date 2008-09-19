@@ -2,6 +2,7 @@
  *  rules.c - MCE daemon
  *
  *  Based on code from acpid.
+ *  Copyright (c) 2007 Tim Hockin (thockin@hockin.org)
  *  Copyright (c) 2007 Google, Inc. (thockin@google.com)
  *  Portions Copyright (c) 2004 Tim Hockin (thockin@hockin.org)
  *  Portions Copyright (c) 2001 Sun Microsystems

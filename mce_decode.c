@@ -2,6 +2,7 @@
  *  mce_decode.c - simple MCE decoder
  *
  *  Based on code from mcelog.
+ *  Copyright (c) 2007 Tim Hockin (thockin@hockin.org)
  *  Copyright (c) 2007 Google, Inc. (thockin@google.com)
  *
  *  This program is free software; you can redistribute it and/or modify

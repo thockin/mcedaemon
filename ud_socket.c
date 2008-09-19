@@ -1,6 +1,6 @@
 /*
  * $Id: ud_socket.c,v 1.5 2005/08/19 06:56:21 thockin Exp $
- * A few  routines for handling UNIX domain sockets
+ * A few routines for handling UNIX domain sockets
  */
 
 #include <stdio.h>
