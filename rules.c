@@ -230,7 +230,7 @@ parse_file(const char *file)
 	}
 
 	/* read each line */
-	while (!feof(fp)) {
+	while (!feof(fp) && !ferror(fp)) {
 		char *p = buf;
 		char key[64];
 		char val[512];
