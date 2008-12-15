@@ -254,7 +254,11 @@ daemonize(void)
 	umask(0);
 
 	/* get out of the way */
-	chdir("/");
+	if (chdir("/") < 0) {
+		fprintf(stderr, "%s: chdir(\"/\"): %s\n", progname,
+		        strerror(errno));
+		return -1;
+	}
 
 	return 0;
 }

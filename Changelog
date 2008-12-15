@@ -10,6 +10,8 @@
   - Tidy up debug prints around the interval adjustment logic. [mced.c]
   - Detect if poll() timed out, and use that in the interval adjustment
     logic. [mced.c]
+  - GCC 4.3.2 gives chdir() the _wur attribute (warn unused result).  Check
+    for errors. [mced.c]
 * Tue Sep 16 2008  Tim Hockin <thockin@google.com>
   - Use rules.mk.
 * Thu May 24 2007  Tim Hockin <thockin@hockin.org>
