@@ -93,6 +93,27 @@ This option keeps \fBmced\fP in the foreground by not forking at startup.
 This option changes the group ownership of the UNIX domain socket to which 
 \fBmced\fP publishes events.
 .TP
+.BI \-m "\fR, \fP" \--socketmode " mode"
+This option changes the permissions of the UNIX domain socket to which
+\fBmced\fP publishes events.  Default is \fI0666\fP.
+.TP
+.BI \-n "\fR, \fP" \--mininterval " millisecs"
+This option sets the minimum polling interval.  See \-x (\--maxinterval)
+for a description of the polling algorithm.  Default is \fI100\fP
+milliseconds (0.1 seconds).
+.TP
+.BI \-p "\fR, \fP" \--pidfile " filename"
+This option changes the name of the pidfile to which \fBmced\fP writes.
+Default is \fI/var/run/mced.pid\fP.
+.TP
+.BI \-s "\fR, \fP" \--socketfile " filename"
+This option changes the name of the UNIX domain socket which \fBmced\fP opens.
+Default is \fI/var/run/mced/mced.socket\fP.
+.TP
+.BI \-S "\fR, \fP" \--nosocket " filename"
+This option tells \fBmced\fP not to open a UNIX domain socket.  This 
+overrides the \fI-s\fP option, and negates all other socket options.
+.TP
 .BI \-x "\fR, \fP" \--maxinterval " millisecs"
 This option sets the maximum polling interval. Some kernels do not yet
 support poll() on /dev/mcelog, so \fBmced\fP will wake up
@@ -103,27 +124,6 @@ Whenever an MCE is not found (and the polling interval has expired), the
 polling interval will be increased, with an upper bound of the \-x
 (\--maxinterval) option.  To disable polling completely, set this option
 to 0.
-.TP
-.BI \-n "\fR, \fP" \--mininterval " millisecs"
-This option sets the minimum polling interval.  See \-x (\--maxinterval)
-for a description of the polling algorithm.  Default is \fI100\fP
-milliseconds (0.1 seconds).
-.TP
-.BI \-m "\fR, \fP" \--socketmode " mode"
-This option changes the permissions of the UNIX domain socket to which
-\fBmced\fP publishes events.  Default is \fI0666\fP.
-.TP
-.BI \-s "\fR, \fP" \--socketfile " filename"
-This option changes the name of the UNIX domain socket which \fBmced\fP opens.
-Default is \fI/var/run/mced/mced.socket\fP.
-.TP
-.BI \-S "\fR, \fP" \--nosocket " filename"
-This option tells \fBmced\fP not to open a UNIX domain socket.  This 
-overrides the \fI-s\fP option, and negates all other socket options.
-.TP
-.BI \-p "\fR, \fP" \--pidfile " filename"
-This option changes the name of the pidfile to which \fBmced\fP writes.
-Default is \fI/var/run/mced.pid\fP.
 .TP
 .BI \-v "\fR, \fP" \--version
 Print version information and exit.

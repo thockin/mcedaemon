@@ -105,12 +105,12 @@ handle_cmdline(int *argc, char ***argv)
 		{"device", 1, 0, 'D'},
 		{"foreground", 0, 0, 'f'},
 		{"socketgroup", 1, 0, 'g'},
-		{"maxinterval", 1, 0, 'x'},
-		{"mininterval", 1, 0, 'n'},
 		{"socketmode", 1, 0, 'm'},
-		{"socketfile", 1, 0, 's'},
+		{"mininterval", 1, 0, 'n'},
 		{"pidfile", 1, 0, 'p'},
+		{"socketfile", 1, 0, 's'},
 		{"nosocket", 1, 0, 'S'},
+		{"maxinterval", 1, 0, 'x'},
 		{"version", 0, 0, 'v'},
 		{"help", 0, 0, 'h'},
 		{NULL, 0, 0, 0},
@@ -125,12 +125,12 @@ handle_cmdline(int *argc, char ***argv)
 		"Use the specified mcelog device.",	/* device */
 		"Run in the foreground.",		/* foreground */
 		"Set the group on the socket file.",	/* socketgroup */
-		"Set the MCE polling max interval (msecs).", /* maxinterval */
-		"Set the MCE polling min interval (msecs).", /* mininterval */
 		"Set the permissions on the socket file.",/* socketmode */
-		"Use the specified socket file.",	/* socketfile */
+		"Set the MCE polling min interval (msecs).", /* mininterval */
 		"Use the specified PID file.",		/* pidfile */
+		"Use the specified socket file.",	/* socketfile */
 		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
+		"Set the MCE polling max interval (msecs).", /* maxinterval */
 		"Print version information.",		/* version */
 		"Print this message.",			/* help */
 	};
