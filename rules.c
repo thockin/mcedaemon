@@ -504,7 +504,10 @@ do_cmd_rule(struct rule *rule, struct mce *mce)
 	case 0: /* child */
 		/* parse the commandline, doing any expansions needed */
 		action = parse_cmd(rule->action.cmd, mce);
-		mced_log(LOG_NOTICE, "executing action \"%s\"\n", action);
+		if (mced_log_events) {
+			mced_log(LOG_NOTICE, "executing action \"%s\"\n",
+			         action);
+		}
 
 		/* reset signals */
 		signal(SIGHUP, SIG_DFL);
@@ -514,8 +517,8 @@ do_cmd_rule(struct rule *rule, struct mce *mce)
 		signal(SIGPIPE, SIG_DFL);
 		sigprocmask(SIG_UNBLOCK, signals_handled(), NULL);
 
-		if (mced_debug)
-			fprintf(stdout, "BEGIN HANDLER MESSAGES\n");
+		if (mced_log_events)
+			mced_log(LOG_NOTICE, "BEGIN HANDLER MESSAGES\n");
 		execl("/bin/sh", "/bin/sh", "-c", action, NULL);
 		/* should not get here */
 		mced_perror(LOG_ERR, "ERR: execl()");
@@ -524,16 +527,20 @@ do_cmd_rule(struct rule *rule, struct mce *mce)
 
 	/* parent */
 	waitpid(pid, &status, 0);
-	if (mced_debug)
-		fprintf(stdout, "END HANDLER MESSAGES\n");
-	if (WIFEXITED(status)) {
-		mced_log(LOG_INFO, "action exited with status %d\n",
-			WEXITSTATUS(status));
-	} else if (WIFSIGNALED(status)) {
-		mced_log(LOG_INFO, "action exited on signal %d\n",
-		    WTERMSIG(status));
-	} else {
-		mced_log(LOG_INFO, "action exited with status %d\n", status);
+	if (mced_log_events) {
+		mced_log(LOG_NOTICE, "END HANDLER MESSAGES\n");
+	}
+	if (mced_log_events) {
+		if (WIFEXITED(status)) {
+			mced_log(LOG_INFO, "action exited with status %d\n",
+			         WEXITSTATUS(status));
+		} else if (WIFSIGNALED(status)) {
+			mced_log(LOG_INFO, "action exited on signal %d\n",
+			         WTERMSIG(status));
+		} else {
+			mced_log(LOG_INFO, "action exited with status %d\n",
+			         status);
+		}
 	}
 
 	return 0;
@@ -546,7 +553,9 @@ do_client_rule(struct rule *rule, struct mce *mce)
 	int client = rule->action.fd;
 	char buf[2048];
 
-	mced_log(LOG_NOTICE, "notifying client %s\n", rule->origin);
+	if (mced_log_events) {
+		mced_log(LOG_NOTICE, "notifying client %s\n", rule->origin);
+	}
 
 	snprintf(buf, sizeof(buf)-1,
 		"%d %d 0x%016llx 0x%016llx 0x%016llx 0x%016llx 0x%016llx %d\n",
@@ -557,7 +566,8 @@ do_client_rule(struct rule *rule, struct mce *mce)
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
 		/* closed */
-		mced_log(LOG_NOTICE, "client has disconnected\n");
+		mced_log(LOG_NOTICE, "client %s has disconnected\n",
+		         rule->origin);
 		delist_rule(&client_list, rule);
 		close(rule->action.fd);
 		free_rule(rule);
@@ -679,7 +689,7 @@ parse_cmd(const char *cmd, struct mce *mce)
 			buf[used++] = *p++;
 		}
 	}
-	if (mced_debug >= 2) {
+	if (mced_debug >= 2 && mced_log_events) {
 		mced_log(LOG_DEBUG, "DBG: expanded \"%s\" -> \"%s\"\n",
 		    cmd, buf);
 	}

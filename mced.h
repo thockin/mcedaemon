@@ -85,6 +85,7 @@ struct mce {
  * mced.c
  */
 extern int mced_debug;
+extern int mced_log_events;
 extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_perror(int level, const char *str);
 

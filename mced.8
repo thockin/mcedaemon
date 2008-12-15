@@ -78,8 +78,8 @@ configuration files.  Default is \fI/etc/mced\fP.
 .TP 12
 .BI \-d "\fR, \fP" \--debug
 This option increases the \fBmced\fP debug level by one.  If the debug level
-is non-zero, \fBmced\fP will run in the foreground, and will log to
-stderr, in addition to the regular log.
+is non-zero, \fBmced\fP will run in the foreground, will log information
+about each event, and will log to stderr, in addition to the regular log.
 .TP
 .BI \-D "\fR, \fP" \--device " filename"
 This option changes the device file from which \fBmced\fP reads events.
@@ -90,8 +90,12 @@ This option keeps \fBmced\fP in the foreground by not forking at startup.
 .TP
 .TP
 .BI \-g "\fR, \fP" \--socketgroup " groupname"
-This option changes the group ownership of the UNIX domain socket to which 
+This option changes the group ownership of the UNIX domain socket to which
 \fBmced\fP publishes events.
+.TP
+.BI \-l "\fR, \fP" \--logevents
+This option tells \fBmced\fP to log information about all events and
+actions.  Default is \fIoff\fP.
 .TP
 .BI \-m "\fR, \fP" \--socketmode " mode"
 This option changes the permissions of the UNIX domain socket to which

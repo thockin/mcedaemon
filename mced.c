@@ -50,6 +50,9 @@
 /* global debug level */
 int mced_debug;
 
+/* do we log event info? */
+int mced_log_events;
+
 #if BUILD_MCE_DB
 /* global database handle */
 struct mce_database *mced_db;
@@ -94,6 +97,7 @@ handle_cmdline(int *argc, char ***argv)
 		{"device", 1, 0, 'D'},
 		{"foreground", 0, 0, 'f'},
 		{"socketgroup", 1, 0, 'g'},
+		{"logevents", 0, 0, 'l'},
 		{"socketmode", 1, 0, 'm'},
 		{"mininterval", 1, 0, 'n'},
 		{"pidfile", 1, 0, 'p'},
@@ -110,16 +114,17 @@ handle_cmdline(int *argc, char ***argv)
 #endif
 		"Set the current boot number.",		/* bootnum */
 		"Set the configuration directory.",	/* confdir */
-		"Increase debugging level (implies -f).",/* debug */
+		"Increase debugging level (implies -f -l).",/* debug */
 		"Use the specified mcelog device.",	/* device */
 		"Run in the foreground.",		/* foreground */
 		"Set the group on the socket file.",	/* socketgroup */
+		"Log each MCE and handlers.",		/* logevents */
 		"Set the permissions on the socket file.",/* socketmode */
-		"Set the MCE polling min interval (msecs).", /* mininterval */
+		"Set the MCE polling min interval (msecs).",/* mininterval */
 		"Use the specified PID file.",		/* pidfile */
 		"Use the specified socket file.",	/* socketfile */
 		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
-		"Set the MCE polling max interval (msecs).", /* maxinterval */
+		"Set the MCE polling max interval (msecs).",/* maxinterval */
 		"Print version information.",		/* version */
 		"Print this message.",			/* help */
 	};
@@ -133,7 +138,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:dD:fg:x:n:m:s:p:Svh", opts, NULL);
+		    "b:c:dD:fg:lm:n:s:p:Sx:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -151,6 +156,7 @@ handle_cmdline(int *argc, char ***argv)
 			break;
 		case 'd':
 			foreground = 1;
+			mced_log_events = 1;
 			mced_debug++;
 			break;
 		case 'D':
@@ -173,6 +179,9 @@ handle_cmdline(int *argc, char ***argv)
 			if (min_interval_ms <= 0) {
 				min_interval_ms = 0;
 			}
+			break;
+		case 'l':
+			mced_log_events = 1;
 			break;
 		case 'm':
 			socketmode = strtol(optarg, NULL, 8);
@@ -485,9 +494,13 @@ do_one_mce(struct kernel_mce *kmce)
 		    mcedb_end(mced_db)-1);
 	}
 #endif
-	mced_log(LOG_INFO, "starting MCE handlers\n");
+	if (mced_log_events) {
+		mced_log(LOG_INFO, "starting MCE handlers\n");
+	}
 	mced_handle_mce(&mce);
-	mced_log(LOG_INFO, "completed MCE handlers\n");
+	if (mced_log_events) {
+		mced_log(LOG_INFO, "completed MCE handlers\n");
+	}
 	return 0;
 }
 
@@ -674,6 +687,8 @@ main(int argc, char **argv)
 	mce_poll_works = check_mcelog_poll(mce_fd);
 
 	/* main loop */
+	mced_log(LOG_INFO, "waiting for events: event logging is %s\n",
+	         mced_log_events ? "on" : "off");
 	interval_ms = max_interval_ms;
 	while (1) {
 		struct pollfd ar[2];
@@ -762,6 +777,7 @@ main(int argc, char **argv)
 				    "ERR: can't accept client\n");
 				continue;
 			}
+			fcntl(cli_fd, F_SETFD, FD_CLOEXEC);
 			snprintf(buf, sizeof(buf)-1, "%d[%d:%d]",
 				creds.pid, creds.uid, creds.gid);
 			mced_add_client(cli_fd, buf);
