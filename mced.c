@@ -78,17 +78,6 @@ static int fake_dev_mcelog = 0;
  * Helpers
  */
 
-int
-path_is_dir(const char *path)
-{
-	struct stat s;
-	if (stat(path, &s)) {
-		mced_perror(LOG_WARNING, "ERR: stat()");
-		return 0;
-	}
-	return S_ISDIR(s.st_mode);
-}
-
 /*
  * Parse command line arguments.
  */

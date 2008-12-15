@@ -87,7 +87,6 @@ struct mce {
 extern int mced_debug;
 extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_perror(int level, const char *str);
-extern int path_is_dir(const char *path);
 
 /*
  * rules.c

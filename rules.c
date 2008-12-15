@@ -105,6 +105,7 @@ mced_read_conf(const char *confdir)
 	while ((dirent = readdir(dir))) {
 		int len;
 		struct rule *r;
+		struct stat stbuf;
 
 		if (dirent->d_name[0] == '.')
 			continue; /* skip dotfiles */
@@ -125,9 +126,17 @@ mced_read_conf(const char *confdir)
 		}
 		snprintf(file, len, "%s/%s", confdir, dirent->d_name);
 
-		if (path_is_dir(file)) {
+		/* allow only regular files and symlinks to files */
+		if (stat(file, &stbuf) != 0) {
+			mced_log(LOG_ERR, "ERR: stat(%s): %s\n", file,
+			         strerror(errno));
 			free(file);
-			continue; /* skip subdirs */
+			continue; /* keep trying the rest of the files */
+		}
+		if (!S_ISREG(stbuf.st_mode)) {
+			mced_log(LOG_DEBUG, "skipping non-file %s\n", file);
+			free(file);
+			continue; /* skip non-regular files */
 		}
 
 		r = parse_file(file);

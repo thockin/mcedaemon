@@ -14,6 +14,7 @@
     for errors. [mced.c]
   - Add pidfile support (from acpid). [mced.c, mced.h, mced.8]
   - Re-sort commandline options. [mced.c, mced.8]
+  - Only read regular files for config. [mced.c, rules.c, mced.h]
 * Tue Sep 16 2008  Tim Hockin <thockin@google.com>
   - Use rules.mk.
 * Thu May 24 2007  Tim Hockin <thockin@hockin.org>
