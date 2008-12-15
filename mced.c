@@ -67,6 +67,7 @@ static int nosocket;
 static const char *socketgroup;
 static mode_t socketmode = MCED_SOCKETMODE;
 static int foreground;
+static const char *pidfile = MCED_PIDFILE;
 #if BUILD_MCE_DB
 static const char *dbdir = MCED_DBDIR;
 #endif
@@ -108,6 +109,7 @@ handle_cmdline(int *argc, char ***argv)
 		{"mininterval", 1, 0, 'n'},
 		{"socketmode", 1, 0, 'm'},
 		{"socketfile", 1, 0, 's'},
+		{"pidfile", 1, 0, 'p'},
 		{"nosocket", 1, 0, 'S'},
 		{"version", 0, 0, 'v'},
 		{"help", 0, 0, 'h'},
@@ -127,6 +129,7 @@ handle_cmdline(int *argc, char ***argv)
 		"Set the MCE polling min interval (msecs).", /* mininterval */
 		"Set the permissions on the socket file.",/* socketmode */
 		"Use the specified socket file.",	/* socketfile */
+		"Use the specified PID file.",		/* pidfile */
 		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
 		"Print version information.",		/* version */
 		"Print this message.",			/* help */
@@ -141,7 +144,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:dD:fg:x:n:m:s:Svh", opts, NULL);
+		    "b:c:dD:fg:x:n:m:s:p:Svh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -187,6 +190,9 @@ handle_cmdline(int *argc, char ***argv)
 			break;
 		case 's':
 			socketfile = optarg;
+			break;
+		case 'p':
+			pidfile = optarg;
 			break;
 		case 'S':
 			nosocket = 1;
@@ -302,6 +308,36 @@ open_log(void)
 	return 0;
 }
 
+static int
+create_pidfile(void)
+{
+	int fd;
+
+	/* JIC */
+	unlink(pidfile);
+
+	/* open the pidfile */
+	fd = open(pidfile, O_WRONLY|O_CREAT|O_EXCL, 0644);
+	if (fd >= 0) {
+		FILE *f;
+
+		/* write our pid to it */
+		f = fdopen(fd, "w");
+		if (f != NULL) {
+			fprintf(f, "%d\n", getpid());
+			fclose(f);
+			/* leave the fd open */
+			return 0;
+		}
+		close(fd);
+	}
+
+	/* something went wrong */
+	mced_log(LOG_ERR, "ERR: can't create pidfile %s: %s\n",
+	         pidfile, strerror(errno));
+	return -1;
+}
+
 static void
 clean_exit(int sig __attribute__((unused)))
 {
@@ -309,6 +345,7 @@ clean_exit(int sig __attribute__((unused)))
 #if BUILD_MCE_DB
 	mcedb_close(mced_db);
 #endif
+	unlink(pidfile);
 	mced_log(LOG_NOTICE, "exiting\n");
 	exit(EXIT_SUCCESS);
 }
@@ -635,7 +672,14 @@ main(int argc, char **argv)
 	signal(SIGPIPE, SIG_IGN);
 
 	/* read in our configuration */
-	mced_read_conf(confdir);
+	if (mced_read_conf(confdir) < 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	/* create our pidfile */
+	if (create_pidfile() < 0) {
+		exit(EXIT_FAILURE);
+	}
 
 	/* see if mcelog supports poll() */
 	mce_poll_works = check_mcelog_poll(mce_fd);
