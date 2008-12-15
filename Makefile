@@ -10,10 +10,11 @@ PRJ_VERSION = 0.5.0
 # assign build options default values
 # Use '?=' variable assignment so ENV variables can be used.
 
-DEBUG ?= 1		# boolean
-STATIC ?= 0		# option: 0=no, 1=yes, 2=partial
-PROFILE ?= 0		# boolean
-BUILD_MCE_DB ?= 0	# boolean
+DEBUG ?= 1			# boolean
+STATIC ?= 0			# option: 0=no, 1=yes, 2=partial
+PROFILE ?= 0			# boolean
+BUILD_MCE_DB ?= 0		# boolean
+ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
 
 # assign any flags variables
 # Use '+=' variable assignment so ENV variables can be used.
@@ -21,6 +22,7 @@ BUILD_MCE_DB ?= 0	# boolean
 DEFS += -D_GNU_SOURCE
 CWARNS += -Wundef -Wshadow
 CFLAGS += -DBUILD_MCE_DB=$(BUILD_MCE_DB)
+CFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
 ifneq "$(BUILD_MCE_DB)" "0"
 LDFLAGS += -ldb
 endif

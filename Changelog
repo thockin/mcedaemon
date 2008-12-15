@@ -1,5 +1,16 @@
 %changelog
-* Thu May 24 2007  Tim Hockin <thockin@hockin.org>
-  - Initial import.
+* Sun Dec 14 2008  Tim Hockin <thockin@hockin.org>
+  - Fix Changelog ordering. [Changelog]
+  - Change -i (--interval) to be -x (--max_interval) and -n (--mininterval)
+    options. [mced.c, mced.h, mced.8]
+  - Add support for using a FIFO as /dev/mcelog for testing.  Compiled off
+    by default. This require O_NONBLOCK on the open().  [mced.c, Makefile]
+  - Make mced_vlog() static. [mced.h, mced.c]
+  - Move the GCC printf attribute to th header.  [mced.c, mced.h]
+  - Tidy up debug prints around the interval adjustment logic. [mced.c]
+  - Detect if poll() timed out, and use that in the interval adjustment
+    logic. [mced.c]
 * Tue Sep 16 2008  Tim Hockin <thockin@google.com>
   - Use rules.mk.
+* Thu May 24 2007  Tim Hockin <thockin@hockin.org>
+  - Initial import.

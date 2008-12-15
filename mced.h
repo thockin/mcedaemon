@@ -30,7 +30,8 @@
 #include <stdarg.h>
 
 #define MCED_EVENTFILE		"/dev/mcelog"
-#define MCED_INTERVAL		5000 /* milliseconds */
+#define MCED_MAX_INTERVAL	5000 /* milliseconds */
+#define MCED_MIN_INTERVAL	100  /* milliseconds */
 #define MCED_CONFDIR		"/etc/mced"
 #define MCED_SOCKETFILE		"/var/run/mced/mced.socket"
 #define MCED_SOCKETMODE		0666
@@ -74,12 +75,16 @@ struct mce {
 } __attribute__ ((packed));
 #define MCE_STRUCT_VER	1
 
+#ifdef __GNUC__
+#  define PRINTF_ARGS(fmt, var)  __attribute__((format(printf, fmt, var)))
+#else
+#  define PRINTF_ARGS(fmtarg, vararg)
+#endif
 /*
  * mced.c
  */
 extern int mced_debug;
-extern int mced_vlog(int level, const char *fmt, va_list args);
-extern int mced_log(int level, const char *fmt, ...);
+extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_perror(int level, const char *str);
 extern int path_is_dir(const char *path);
 

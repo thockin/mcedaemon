@@ -60,7 +60,8 @@ static const char *progname;
 static int bootnum;
 static const char *confdir = MCED_CONFDIR;
 static const char *device = MCED_EVENTFILE;
-static int max_interval = MCED_INTERVAL;
+static int max_interval_ms = MCED_MAX_INTERVAL;
+static int min_interval_ms = MCED_MIN_INTERVAL;
 static const char *socketfile = MCED_SOCKETFILE;
 static int nosocket;
 static const char *socketgroup;
@@ -69,6 +70,8 @@ static int foreground;
 #if BUILD_MCE_DB
 static const char *dbdir = MCED_DBDIR;
 #endif
+/* This is only used if ENABLE_FAKE_DEV_MCELOG is non-zero */
+static int fake_dev_mcelog = 0;
 
 /*
  * Helpers
@@ -79,7 +82,7 @@ path_is_dir(const char *path)
 {
 	struct stat s;
 	if (stat(path, &s)) {
-		mced_perror(LOG_WARNING, "stat()");
+		mced_perror(LOG_WARNING, "ERR: stat()");
 		return 0;
 	}
 	return S_ISDIR(s.st_mode);
@@ -101,7 +104,8 @@ handle_cmdline(int *argc, char ***argv)
 		{"device", 1, 0, 'D'},
 		{"foreground", 0, 0, 'f'},
 		{"socketgroup", 1, 0, 'g'},
-		{"interval", 1, 0, 'i'},
+		{"maxinterval", 1, 0, 'x'},
+		{"mininterval", 1, 0, 'n'},
 		{"socketmode", 1, 0, 'm'},
 		{"socketfile", 1, 0, 's'},
 		{"nosocket", 1, 0, 'S'},
@@ -119,7 +123,8 @@ handle_cmdline(int *argc, char ***argv)
 		"Use the specified mcelog device.",	/* device */
 		"Run in the foreground.",		/* foreground */
 		"Set the group on the socket file.",	/* socketgroup */
-		"Set the MCE polling max interval (msecs).", /* interval */
+		"Set the MCE polling max interval (msecs).", /* maxinterval */
+		"Set the MCE polling min interval (msecs).", /* mininterval */
 		"Set the permissions on the socket file.",/* socketmode */
 		"Use the specified socket file.",	/* socketfile */
 		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
@@ -136,7 +141,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:dD:fg:i:m:s:Svh", opts, NULL);
+		    "b:c:dD:fg:x:n:m:s:Svh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -165,8 +170,17 @@ handle_cmdline(int *argc, char ***argv)
 		case 'g':
 			socketgroup = optarg;
 			break;
-		case 'i':
-			max_interval = strtol(optarg, NULL, 0);
+		case 'x':
+			max_interval_ms = strtol(optarg, NULL, 0);
+			if (max_interval_ms <= 0) {
+				max_interval_ms = -1;
+			}
+			break;
+		case 'n':
+			min_interval_ms = strtol(optarg, NULL, 0);
+			if (min_interval_ms <= 0) {
+				min_interval_ms = 0;
+			}
 			break;
 		case 'm':
 			socketmode = strtol(optarg, NULL, 8);
@@ -303,7 +317,7 @@ reload_conf(int sig __attribute__((unused)))
 	mced_read_conf(confdir);
 }
 
-int
+static int
 mced_vlog(int level, const char *fmt, va_list args)
 {
 	vsyslog(level, fmt, args);
@@ -311,9 +325,6 @@ mced_vlog(int level, const char *fmt, va_list args)
 }
 
 int
-#ifdef __GNUC__
-__attribute__((format(printf, 2, 3)))
-#endif
 mced_log(int level, const char *fmt, ...)
 {
 	va_list args;
@@ -335,24 +346,37 @@ mced_perror(int level, const char *str)
 static int
 open_mcelog(const char *path)
 {
+	struct stat stbuf;
 	int mce_fd;
 	int rec_len;
 
-	mce_fd = open(path, O_RDONLY|O_EXCL);
-	if (mce_fd < 0) {
-		fprintf(stderr, "%s: can't open %s: %s\n", progname,
-			device, strerror(errno));
+	if (stat(path, &stbuf) < 0) {
+		fprintf(stderr, "%s: can't stat %s: %s\n", progname,
+		        device, strerror(errno));
 		return -1;
 	}
-	if (ioctl(mce_fd, MCE_GET_RECORD_LEN, &rec_len) < 0) {
-		fprintf(stderr, "%s: can't get MCE record size: %s\n",
-			progname, strerror(errno));
+	if (ENABLE_FAKE_DEV_MCELOG && S_ISFIFO(stbuf.st_mode)) {
+		fprintf(stderr, "WARNING: using a fake mcelog device\n");
+		fake_dev_mcelog = 1;
+	}
+	mce_fd = open(path, O_RDONLY|O_EXCL|O_NONBLOCK);
+	if (mce_fd < 0) {
+		fprintf(stderr, "%s: can't open %s: %s\n", progname,
+		        device, strerror(errno));
 		return -1;
+	}
+	if (!fake_dev_mcelog
+	 && ioctl(mce_fd, MCE_GET_RECORD_LEN, &rec_len) < 0) {
+		fprintf(stderr, "%s: can't get MCE record size: %s\n",
+		        progname, strerror(errno));
+		return -1;
+	} else if (fake_dev_mcelog) {
+		rec_len = sizeof(struct kernel_mce);
 	}
 	if (rec_len != sizeof(struct kernel_mce)) {
 		fprintf(stderr,
-			"%s: kernel MCE record size (%d) is unsupported\n",
-			progname, rec_len);
+		        "%s: kernel MCE record size (%d) is unsupported\n",
+		        progname, rec_len);
 		return -1;
 	}
 
@@ -437,6 +461,22 @@ do_one_mce(struct kernel_mce *kmce)
 	return 0;
 }
 
+static int
+get_loglen(int mce_fd)
+{
+	if (!fake_dev_mcelog) {
+		int loglen;
+		int r = ioctl(mce_fd, MCE_GET_LOG_LEN, &loglen);
+		if (r < 0) {
+			mced_perror(LOG_ERR, "ERR: ioctl(MCE_GET_LOG_LEN)");
+			return -1;
+		}
+		return loglen;
+	} else {
+		return 1;
+	}
+}
+
 int
 do_pending_mces(int mce_fd)
 {
@@ -444,13 +484,16 @@ do_pending_mces(int mce_fd)
 	int nmces = 0;
 
 	/* check for MCEs */
-	ioctl(mce_fd, MCE_GET_LOG_LEN, &loglen);
-	if (loglen != 0) {
+	loglen = get_loglen(mce_fd);
+	if (loglen > 0) {
 		struct kernel_mce kmce[loglen];
 		int n;
 
 		n = read(mce_fd, kmce, sizeof(kmce)*loglen);
 		if (n < 0) {
+			if (fake_dev_mcelog && errno == EAGAIN) {
+				return 0;
+			}
 			mced_perror(LOG_ERR, "ERR: read()");
 			return -1;
 		}
@@ -531,7 +574,7 @@ main(int argc, char **argv)
 {
 	int mce_fd;
 	int sock_fd = -1; /* init to avoid a compiler warning */
-	int interval;
+	int interval_ms;
 	int mce_poll_works;
 
 	/* learn who we really are */
@@ -594,13 +637,14 @@ main(int argc, char **argv)
 	mce_poll_works = check_mcelog_poll(mce_fd);
 
 	/* main loop */
-	interval = max_interval;
+	interval_ms = max_interval_ms;
 	while (1) {
 		struct pollfd ar[2];
 		int r;
 		int nfds = 0;
 		int mce_idx = -1;
 		int sock_idx = -1;
+		int timed_out;
 
 		/* poll on the mcelog */
 		if (mce_poll_works) {
@@ -617,13 +661,23 @@ main(int argc, char **argv)
 			sock_idx = nfds;
 			nfds++;
 		}
-		r = poll(ar, nfds, interval);
-
+		if (mced_debug > 1 && max_interval_ms > 0) {
+			mced_log(LOG_DEBUG, "DBG: next interval = %d msecs\n",
+			         interval_ms);
+		}
+		r = poll(ar, nfds, interval_ms);
 		if (r < 0 && errno == EINTR) {
 			continue;
 		} else if (r < 0) {
 			mced_perror(LOG_ERR, "ERR: poll()");
 			continue;
+		}
+		/* see if poll() timed out */
+		if (r == 0) {
+			timed_out = 1;
+			mced_log(LOG_DEBUG, "DBG: poll timeout\n");
+		} else {
+			timed_out = 0;
 		}
 
 		/*
@@ -634,21 +688,19 @@ main(int argc, char **argv)
 
 			/* check for MCEs */
 			n = do_pending_mces(mce_fd);
-			if (n == 0) {
-				interval *= 2;
-				if (interval > max_interval) {
-					interval = max_interval;
+			/* if we are actively polling, adjust intervals */
+			if (max_interval_ms > 0) {
+				if (n == 0 && timed_out) {
+					interval_ms *= 2;
+					if (interval_ms > max_interval_ms) {
+						interval_ms = max_interval_ms;
+					}
+				} else if (n > 0) {
+					interval_ms /= 2;
+					if (interval_ms < min_interval_ms) {
+						interval_ms = min_interval_ms;
+					}
 				}
-			} else if (n > 0) {
-				interval /= 2;
-				if (interval == 0) {
-					interval = 1;
-				}
-			}
-			if (mced_debug > 1) {
-				mced_log(LOG_DEBUG,
-				    "DBG: next interval = %d msecs\n",
-				    interval);
 			}
 		}
 

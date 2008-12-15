@@ -93,10 +93,21 @@ This option keeps \fBmced\fP in the foreground by not forking at startup.
 This option changes the group ownership of the UNIX domain socket to which 
 \fBmced\fP publishes events.
 .TP
-.BI \-i "\fR, \fP" \--interval " millisecs"
+.BI \-x "\fR, \fP" \--maxinterval " millisecs"
 This option sets the maximum polling interval. Some kernels do not yet
 support poll() on /dev/mcelog, so \fBmced\fP will wake up
-every polling interval and check for MCEs.  Default is \fI5000\fP.
+every polling interval and check for MCEs.  Default is \fI5000\fP
+milliseconds (5 seconds).  Whenever an MCE is found, the polling interval
+will be reduced, with a lower bound of the \-n (\--mininterval) option.
+Whenever an MCE is not found (and the polling interval has expired), the
+polling interval will be increased, with an upper bound of the \-x
+(\--maxinterval) option.  To disable polling completely, set this option
+to 0.
+.TP
+.BI \-n "\fR, \fP" \--mininterval " millisecs"
+This option sets the minimum polling interval.  See \-x (\--maxinterval)
+for a description of the polling algorithm.  Default is \fI100\fP
+milliseconds (0.1 seconds).
 .TP
 .BI \-m "\fR, \fP" \--socketmode " mode"
 This option changes the permissions of the UNIX domain socket to which
