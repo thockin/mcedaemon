@@ -646,11 +646,11 @@ parse_cmd(const char *cmd, struct mce *mce)
 			if (*p == 'c') {
 				/* cpu */
 				used += snprintf(buf+used, size,
-					"%d", mce->cpu);
+					"%u", mce->cpu);
 			} else if (*p == 'b') {
 				/* bank */
 				used += snprintf(buf+used, size,
-					"%d", mce->bank);
+					"%u", mce->bank);
 			} else if (*p == 's') {
 				/* status */
 				used += snprintf(buf+used, size,
@@ -667,15 +667,29 @@ parse_cmd(const char *cmd, struct mce *mce)
 					"0x%016llx",
 					(unsigned long long)mce->misc);
 			} else if (*p == 'g') {
-				/* misc */
+				/* gstatus */
 				used += snprintf(buf+used, size,
 					"0x%016llx",
 					(unsigned long long)mce->gstatus);
 			} else if (*p == 't') {
-				/* misc */
+				/* time */
 				used += snprintf(buf+used, size,
 					"0x%016llx",
 					(unsigned long long)mce->time);
+			} else if (*p == 'T') {
+				/* tsc */
+				used += snprintf(buf+used, size,
+					"0x%016llx",
+					(unsigned long long)mce->tsc);
+			} else if (*p == 'C') {
+				/* cs */
+				used += snprintf(buf+used, size,
+					"0x%02x", mce->cs);
+			} else if (*p == 'I') {
+				/* ip */
+				used += snprintf(buf+used, size,
+					"0x%016llx",
+					(unsigned long long)mce->ip);
 			} else if (*p == 'B') {
 				/* bootnum */
 				used += snprintf(buf+used, size,

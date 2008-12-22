@@ -66,11 +66,14 @@ struct kernel_mce {
 /* this is our notion of an MCE */
 struct mce {
 	uint64_t status;	/* MCi_STATUS */
-	uint64_t address;	/* MCi_MISC */
+	uint64_t address;	/* MCi_ADDR */
 	uint64_t misc;		/* MCi_MISC */
 	uint64_t gstatus;	/* MCG_STATUS */
-	uint64_t time;		/* time stamp in (usecs since epoch) */
+	uint64_t tsc;		/* CPU timestamp counter */
+	uint64_t time;		/* MCED timestamp (usecs since epoch) */
+	uint64_t ip;		/* CPU instruction pointer */
 	int32_t  boot;		/* boot number (-1 for unknown) */
+	uint8_t  cs;		/* CPU code segment */
 	uint8_t  cpu;		/* excepting CPU */
 	uint8_t  bank;		/* MC bank */
 } __attribute__ ((packed));

@@ -473,14 +473,17 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
+	mce->boot = bootnum;
+	mce->bank = kmce->bank;
 	mce->status = kmce->status;
 	mce->address = kmce->addr;
 	mce->misc = kmce->misc;
 	mce->gstatus = kmce->mcgstatus;
+	mce->tsc = kmce->tsc;
 	mce->time = (tv.tv_sec * 1000000) + tv.tv_usec;
-	mce->boot = bootnum;
 	mce->cpu = kmce->cpu;
-	mce->bank = kmce->bank;
+	mce->cs = kmce->cs;
+	mce->ip = kmce->rip;
 }
 
 static int
