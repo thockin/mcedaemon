@@ -425,7 +425,7 @@ mced_handle_mce(struct mce *mce)
 			/* the list can change underneath us */
 			struct rule *pnext = p->next;
 
-			if (mced_debug) {
+			if (mced_debug && mced_log_events) {
 				mced_log(LOG_DEBUG, "DBG: rule from %s\n",
 				    p->origin);
 			}
@@ -444,7 +444,7 @@ mced_handle_mce(struct mce *mce)
 
 	unlock_rules();
 
-	if (mced_debug) {
+	if (mced_debug && mced_log_events) {
 		mced_log(LOG_DEBUG, "DBG: %d total rule%s matched\n",
 			nrules, (nrules==1)?"":"s");
 	}

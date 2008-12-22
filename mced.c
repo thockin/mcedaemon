@@ -156,7 +156,6 @@ handle_cmdline(int *argc, char ***argv)
 			break;
 		case 'd':
 			foreground = 1;
-			mced_log_events = 1;
 			mced_debug++;
 			break;
 		case 'D':
@@ -547,7 +546,7 @@ do_pending_mces(int mce_fd)
 		if (nmces > 0) {
 			int i;
 
-			if (mced_debug) {
+			if (mced_debug && mced_log_events) {
 				mced_log(LOG_DEBUG, "DBG: got %d MCE%s\n",
 				    nmces, (nmces==1)?"":"s");
 			}
@@ -740,6 +739,12 @@ main(int argc, char **argv)
 
 			/* check for MCEs */
 			n = do_pending_mces(mce_fd);
+			if (n == 0 && !timed_out && fake_dev_mcelog) {
+				/* FIFO closed */
+				mced_log(LOG_INFO,
+				         "fake mcelog device closed\n");
+				break;
+			}
 			/* if we are actively polling, adjust intervals */
 			if (max_interval_ms > 0) {
 				if (n == 0 && timed_out) {
