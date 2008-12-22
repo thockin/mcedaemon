@@ -37,7 +37,8 @@ MAN8DIR = $(INSTPREFIX)/usr/share/man/man8
 
 SBIN_PROGS = mced
 BIN_PROGS = mce_listen mce_decode
-PROGS = $(SBIN_PROGS) $(BIN_PROGS)
+TEST_PROGS = mcelog_faker
+PROGS = $(SBIN_PROGS) $(BIN_PROGS) $(TEST_PROGS)
 
 mced_SRCS = mced.c rules.c ud_socket.c
 mced_OBJS = $(mced_SRCS:.c=.o)
@@ -47,6 +48,9 @@ mce_listen_OBJS = $(mce_listen_SRCS:.c=.o)
 
 mce_decode_SRCS = mce_decode.c
 mce_decode_OBJS = $(mce_listen_SRCS:.c=.o)
+
+mcelog_faker_SRCS = mcelog_faker.c
+mcelog_faker_OBJS = $(mcelog_faker_SRCS:.c=.o)
 
 MAN8 = mced.8 mce_listen.8 mce_decode.8
 MAN8GZ = $(MAN8:.8=.8.gz)
@@ -61,6 +65,9 @@ mced: $(mced_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 mce_listen: $(mce_listen_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+mcelog_faker: $(mcelog_faker_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 man: $(MAN8)
