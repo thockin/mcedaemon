@@ -60,7 +60,7 @@ struct mce_database *mced_db;
 
 /* statics */
 static const char *progname;
-static long bootnum;
+static long bootnum = -1;
 static const char *confdir = MCED_CONFDIR;
 static const char *device = MCED_EVENTFILE;
 static long max_interval_ms = MCED_MAX_INTERVAL;

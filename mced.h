@@ -70,7 +70,7 @@ struct mce {
 	uint64_t misc;		/* MCi_MISC */
 	uint64_t gstatus;	/* MCG_STATUS */
 	uint64_t time;		/* time stamp in (usecs since epoch) */
-	uint32_t boot;		/* boot number */
+	int32_t  boot;		/* boot number (-1 for unknown) */
 	uint8_t  cpu;		/* excepting CPU */
 	uint8_t  bank;		/* MC bank */
 } __attribute__ ((packed));
