@@ -115,9 +115,12 @@ Default is \fI/var/run/mced.pid\fP.
 .BI \-r "\fR, \fP" \--ratelimit " mces_per_second"
 This option sets an upper limit on the number of MCEs that will be
 processed per second.  If this option is used, a small delay will be
-injected after each MCE event is handled.  NOTE: simply turning this
-option on at all, even with a very high limit, has a detrimental effect on
-the number of MCEs that can be handled in a given time period.
+injected after each MCE event is handled.  NOTE: Simply turning this
+option on at all, even with a very high limit, can have a detrimental
+effect on the number of MCEs that can be handled in a given time period,
+mostly due to inherent jitter with very small sleeps.  \fBmced\fP tries to
+adjust based on real timings of the system, but there is only so much
+accuracy to be had.
 Default is no rate limit.
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
