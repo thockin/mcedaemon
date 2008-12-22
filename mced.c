@@ -60,11 +60,12 @@ struct mce_database *mced_db;
 
 /* statics */
 static const char *progname;
-static int bootnum;
+static long bootnum;
 static const char *confdir = MCED_CONFDIR;
 static const char *device = MCED_EVENTFILE;
-static int max_interval_ms = MCED_MAX_INTERVAL;
-static int min_interval_ms = MCED_MIN_INTERVAL;
+static long max_interval_ms = MCED_MAX_INTERVAL;
+static long min_interval_ms = MCED_MIN_INTERVAL;
+static long rate_limit = -1;
 static const char *socketfile = MCED_SOCKETFILE;
 static int nosocket;
 static const char *socketgroup;
@@ -101,6 +102,7 @@ handle_cmdline(int *argc, char ***argv)
 		{"socketmode", 1, 0, 'm'},
 		{"mininterval", 1, 0, 'n'},
 		{"pidfile", 1, 0, 'p'},
+		{"ratelimit", 1, 0, 'r'},
 		{"socketfile", 1, 0, 's'},
 		{"nosocket", 1, 0, 'S'},
 		{"maxinterval", 1, 0, 'x'},
@@ -122,6 +124,7 @@ handle_cmdline(int *argc, char ***argv)
 		"Set the permissions on the socket file.",/* socketmode */
 		"Set the MCE polling min interval (msecs).",/* mininterval */
 		"Use the specified PID file.",		/* pidfile */
+		"Limit the number of MCEs handled per second.",/* ratelimit */
 		"Use the specified socket file.",	/* socketfile */
 		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
 		"Set the MCE polling max interval (msecs).",/* maxinterval */
@@ -138,7 +141,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:dD:fg:lm:n:s:p:Sx:vh", opts, NULL);
+		    "b:c:dD:fg:lm:n:s:p:r:Sx:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -183,13 +186,16 @@ handle_cmdline(int *argc, char ***argv)
 			mced_log_events = 1;
 			break;
 		case 'm':
-			socketmode = strtol(optarg, NULL, 8);
+			socketmode = (mode_t)strtol(optarg, NULL, 8);
 			break;
 		case 's':
 			socketfile = optarg;
 			break;
 		case 'p':
 			pidfile = optarg;
+			break;
+		case 'r':
+			rate_limit = strtol(optarg, NULL, 0);
 			break;
 		case 'S':
 			nosocket = 1;
@@ -519,6 +525,82 @@ get_loglen(int mce_fd)
 	}
 }
 
+static int
+elapsed_usecs(struct timeval *t0, struct timeval *t1)
+{
+	int elapsed = (t1->tv_sec - t0->tv_sec) * 1000000;
+	elapsed += (t1->tv_usec - t0->tv_usec);
+	return elapsed;
+}
+
+static void
+advance_time_usecs(struct timeval *tv, int adv_usecs)
+{
+	uint64_t tv_us = (tv->tv_sec * 1000000) + tv->tv_usec + adv_usecs;
+	tv->tv_sec = tv_us / 1000000;
+	tv->tv_usec = tv_us % 1000000;
+}
+
+static void
+do_rate_limit(void)
+{
+	static int first_event = 1;
+	static struct timeval last_timestamp;
+	static int bias;
+
+	if (rate_limit <= 0) {
+		/* no rate limiting */
+		return;
+	} else if (first_event) {
+		/* first time through here, just remember it */
+		first_event = 0;
+		gettimeofday(&last_timestamp, NULL);
+	} else {
+		/* we might have to rate limit */
+		struct timeval now;
+		int usecs_since_last;
+		int usecs_per_event = 1000000 / rate_limit;
+
+		/* find how long it has been since the last event */
+		gettimeofday(&now, NULL);
+		usecs_since_last = elapsed_usecs(&last_timestamp, &now);
+
+		/* set the last_timestamp to now, we might change it later */
+		last_timestamp = now;
+
+		/* are we under the minimum time between events? */
+		if (usecs_per_event > usecs_since_last) {
+			int usecs_to_kill;
+			int missed_by;
+
+			/*
+			 * We set the last_timestamp to the *ideal* time
+			 * (now + usecs_to_kill), rather than the real
+			 * time after the usleep().  This is because
+			 * usleep() (and all other sleeps, really) is
+			 * inaccurate with very small values.  This gets
+			 * us closer to the actual requested rate
+			 * limiting.
+			 *
+			 * We also try to bias the sleep time based on
+			 * past inaccuracy.  We integrate the over/under
+			 * deltas somewhat slowly, so large transients
+			 * should not distort the bias too quickly.
+			 */
+			usecs_to_kill = usecs_per_event - usecs_since_last;
+			advance_time_usecs(&last_timestamp, usecs_to_kill);
+			if ((usecs_to_kill + bias) > 0) {
+				/* do the actual sleep */
+				usleep(usecs_to_kill + bias);
+			}
+			/* adjust the bias */
+			gettimeofday(&now, NULL);
+			missed_by = elapsed_usecs(&last_timestamp, &now);
+			bias -= missed_by / 8;
+		}
+	}
+}
+
 int
 do_pending_mces(int mce_fd)
 {
@@ -553,6 +635,7 @@ do_pending_mces(int mce_fd)
 
 			/* handle all the new MCEs */
 			for (i = 0; i < nmces; i++) {
+				do_rate_limit();
 				do_one_mce(&kmce[i]);
 			}
 		}

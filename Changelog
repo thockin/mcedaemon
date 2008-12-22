@@ -2,6 +2,8 @@
 * Sun Dec 21 2008  Tim Hockin <thockin@hockin.org>
   - Do not imply -l with -d. [mced.c, rules.c]
   - Exit if a fake mcelog device closes. [mced.c]
+  - Change numeric commandline args to be long, not int. [mced.c]
+  - Add rate limiting via -r (--ratelimit) for MCEs.  [mced.c, mced.8]
 * Sun Dec 14 2008  Tim Hockin <thockin@hockin.org>
   - Fix Changelog ordering. [Changelog]
   - Change -i (--interval) to be -x (--max_interval) and -n (--mininterval)
