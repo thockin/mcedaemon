@@ -4,6 +4,7 @@
   - Make the default bootnum be -1, rather than 0. [mced.c, mced.h, mced.8]
   - Add TSC, CS, and IP fields to struct mce from kenrel_mce. [mced.c,
     mced.h, mced.8, rules.c]
+  - Fix a leak closedir() in case of malloc() failure. [rules.c]
 * Sun Dec 21 2008  Tim Hockin <thockin@hockin.org>
   - Do not imply -l with -d. [mced.c, rules.c]
   - Exit if a fake mcelog device closes. [mced.c]
