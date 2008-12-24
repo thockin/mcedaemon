@@ -65,7 +65,7 @@ static const char *confdir = MCED_CONFDIR;
 static const char *device = MCED_EVENTFILE;
 static long max_interval_ms = MCED_MAX_INTERVAL;
 static long min_interval_ms = MCED_MIN_INTERVAL;
-static long rate_limit = -1;
+static long mce_rate_limit = -1;
 static const char *socketfile = MCED_SOCKETFILE;
 static int nosocket;
 static const char *socketgroup;
@@ -195,7 +195,7 @@ handle_cmdline(int *argc, char ***argv)
 			pidfile = optarg;
 			break;
 		case 'r':
-			rate_limit = strtol(optarg, NULL, 0);
+			mce_rate_limit = strtol(optarg, NULL, 0);
 			break;
 		case 'S':
 			nosocket = 1;
@@ -467,6 +467,7 @@ open_socket(const char *path, mode_t mode, const char *group)
 	return sock_fd;
 }
 
+/* convert a kernel MCE struct to our MCE struct */
 static void
 kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 {
@@ -486,12 +487,79 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	mce->ip = kmce->rip;
 }
 
+/* this is used in a few places to throttle messages */
+struct rate_limit {
+	int initialized;		/* first one been done? */
+	int period;			/* milliseconds */
+	struct timeval last_time;	/* last time we hit this */
+};
+#define RATE_LIMIT(ms) { \
+	.initialized = 0, \
+	.period = ms, \
+	.last_time = { 0, 0} \
+}
+
+#define OVERFLOW_MSG_PERIOD	10 /* seconds */
+
+/* subtract two timevals */
+static int
+elapsed_usecs(struct timeval *t0, struct timeval *t1)
+{
+	int elapsed = (t1->tv_sec - t0->tv_sec) * 1000000;
+	elapsed += (t1->tv_usec - t0->tv_usec);
+	return elapsed;
+}
+
+/* do we need to apply rate limiting? */
+static int
+apply_rate_limit(struct rate_limit *limit)
+{
+	struct timeval now;
+	int msecs_since_last;
+
+	if (!limit->initialized) {
+		/* first time through here, just remember it */
+		limit->initialized = 1;
+		gettimeofday(&limit->last_time, NULL);
+		return 0;
+	}
+
+	/* find how long it has been since the last event */
+	gettimeofday(&now, NULL);
+	msecs_since_last = elapsed_usecs(&limit->last_time, &now) / 1000;
+
+	/* has enough time elapsed? */
+	if (msecs_since_last < limit->period) {
+		/* rate limit */
+		return 1;
+	}
+
+	/* do not rate limit */
+	limit->last_time = now;
+	return 0;
+}
+
+/* process a single MCE */
 static int
 do_one_mce(struct kernel_mce *kmce)
 {
 	struct mce mce;
+	static struct rate_limit hw_overflow_limit
+		= RATE_LIMIT(OVERFLOW_MSG_PERIOD * 1000);
 
+	/* convert the kernel's MCE struct to our own */
 	kmce_to_mce(kmce, &mce);
+
+	/* check for overflow */
+	if (mce.status & MCI_STATUS_OVER
+	 && (mced_log_events || !apply_rate_limit(&hw_overflow_limit))) {
+		mced_log(LOG_WARNING, "MCE overflow detected by hardware\n");
+		if (!mced_log_events) {
+			mced_log(LOG_WARNING,
+			    "(previous message suppressed for %d seconds)",
+			    OVERFLOW_MSG_PERIOD);
+		}
+	}
 
 #if BUILD_MCE_DB
 	if (mcedb_append(mced_db, &mce) < 0) {
@@ -512,6 +580,7 @@ do_one_mce(struct kernel_mce *kmce)
 	return 0;
 }
 
+/* get the MCE log length from the kernel */
 static int
 get_loglen(int mce_fd)
 {
@@ -528,14 +597,7 @@ get_loglen(int mce_fd)
 	}
 }
 
-static int
-elapsed_usecs(struct timeval *t0, struct timeval *t1)
-{
-	int elapsed = (t1->tv_sec - t0->tv_sec) * 1000000;
-	elapsed += (t1->tv_usec - t0->tv_usec);
-	return elapsed;
-}
-
+/* add some usecs to a timeval */
 static void
 advance_time_usecs(struct timeval *tv, int adv_usecs)
 {
@@ -544,14 +606,15 @@ advance_time_usecs(struct timeval *tv, int adv_usecs)
 	tv->tv_usec = tv_us % 1000000;
 }
 
+/* enforce MCE rate limiting */
 static void
-do_rate_limit(void)
+rate_limit_mces(void)
 {
 	static int first_event = 1;
 	static struct timeval last_timestamp;
 	static int bias;
 
-	if (rate_limit <= 0) {
+	if (mce_rate_limit <= 0) {
 		/* no rate limiting */
 		return;
 	} else if (first_event) {
@@ -562,7 +625,7 @@ do_rate_limit(void)
 		/* we might have to rate limit */
 		struct timeval now;
 		int usecs_since_last;
-		int usecs_per_event = 1000000 / rate_limit;
+		int usecs_per_event = 1000000 / mce_rate_limit;
 
 		/* find how long it has been since the last event */
 		gettimeofday(&now, NULL);
@@ -604,6 +667,7 @@ do_rate_limit(void)
 	}
 }
 
+/* read and handle and MCEs that are pending in the kernel */
 int
 do_pending_mces(int mce_fd)
 {
@@ -638,7 +702,7 @@ do_pending_mces(int mce_fd)
 
 			/* handle all the new MCEs */
 			for (i = 0; i < nmces; i++) {
-				do_rate_limit();
+				rate_limit_mces();
 				do_one_mce(&kmce[i]);
 			}
 		}
@@ -647,6 +711,7 @@ do_pending_mces(int mce_fd)
 	return nmces;
 }
 
+/* see if poll() works on /dev/mcelog */
 int
 check_mcelog_poll(int mce_fd)
 {
@@ -772,7 +837,7 @@ main(int argc, char **argv)
 	mce_poll_works = check_mcelog_poll(mce_fd);
 
 	/* main loop */
-	mced_log(LOG_INFO, "waiting for events: event logging is %s\n",
+	mced_log(LOG_INFO, "waiting for events: per-event logging is %s\n",
 	         mced_log_events ? "on" : "off");
 	interval_ms = max_interval_ms;
 	while (1) {

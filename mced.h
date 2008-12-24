@@ -79,11 +79,15 @@ struct mce {
 } __attribute__ ((packed));
 #define MCE_STRUCT_VER	1
 
+/* bits from the MCi_STATUS register */
+#define MCI_STATUS_OVER		(1ULL<<62)	/* errors overflowed */
+
 #ifdef __GNUC__
 #  define PRINTF_ARGS(fmt, var)  __attribute__((format(printf, fmt, var)))
 #else
 #  define PRINTF_ARGS(fmtarg, vararg)
 #endif
+
 /*
  * mced.c
  */
