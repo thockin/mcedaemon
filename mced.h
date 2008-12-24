@@ -63,6 +63,9 @@ struct kernel_mce {
 #define MCE_GET_LOG_LEN      _IOR('M', 2, int)
 #define MCE_GETCLEAR_FLAGS   _IOR('M', 3, int)
 
+/* flags from MCE_GETCLEAR_FLAGS */
+#define MCE_FLAG_OVERFLOW    (1ULL << 0)
+
 /* this is our notion of an MCE */
 struct mce {
 	uint64_t status;	/* MCi_STATUS */

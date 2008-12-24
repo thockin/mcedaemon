@@ -551,7 +551,7 @@ do_one_mce(struct kernel_mce *kmce)
 	kmce_to_mce(kmce, &mce);
 
 	/* check for overflow */
-	if (mce.status & MCI_STATUS_OVER
+	if ((mce.status & MCI_STATUS_OVER)
 	 && (mced_log_events || !apply_rate_limit(&hw_overflow_limit))) {
 		mced_log(LOG_WARNING, "MCE overflow detected by hardware\n");
 		if (!mced_log_events) {
@@ -673,6 +673,9 @@ do_pending_mces(int mce_fd)
 {
 	int loglen;
 	int nmces = 0;
+	int flags = 0;
+	static struct rate_limit sw_overflow_limit
+		= RATE_LIMIT(OVERFLOW_MSG_PERIOD * 1000);
 
 	/* check for MCEs */
 	loglen = get_loglen(mce_fd);
@@ -680,6 +683,7 @@ do_pending_mces(int mce_fd)
 		struct kernel_mce kmce[loglen];
 		int n;
 
+		/* read all of the MCE data */
 		n = read(mce_fd, kmce, sizeof(kmce)*loglen);
 		if (n < 0) {
 			if (fake_dev_mcelog && errno == EAGAIN) {
@@ -688,12 +692,33 @@ do_pending_mces(int mce_fd)
 			mced_perror(LOG_ERR, "ERR: read()");
 			return -1;
 		}
-		//FIXME: ioctl(MCE_GETCLEAR_FLAGS
-		//FIXME: log overflows
 
+		/* did we get any MCES? */
 		nmces = n/sizeof(struct kernel_mce);
 		if (nmces > 0) {
 			int i;
+
+			/* read the flags */
+			if (!fake_dev_mcelog
+			 && ioctl(mce_fd, MCE_GETCLEAR_FLAGS, &flags) < 0) {
+				fprintf(stderr, "%s: can't get flags: %s\n",
+					progname, strerror(errno));
+				return -1;
+			}
+
+			/* check for overflow */
+			if ((flags & MCE_FLAG_OVERFLOW)
+			 && (mced_log_events
+			  || !apply_rate_limit(&sw_overflow_limit))){
+				mced_log(LOG_WARNING,
+				    "MCE overflow detected by software\n");
+				if (!mced_log_events) {
+					mced_log(LOG_WARNING,
+					    "(previous message suppressed "
+					    "for %d seconds)",
+					    OVERFLOW_MSG_PERIOD);
+				}
+			}
 
 			if (mced_debug && mced_log_events) {
 				mced_log(LOG_DEBUG, "DBG: got %d MCE%s\n",
