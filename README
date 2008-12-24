@@ -12,3 +12,12 @@ Notes:
 * mced does not try to decode MCEs.  If you want that, you should try
   Andi Kleen's mcelog tool (http://freshmeat.net/projects/mcelog/) or the
   simple generic MCE decoder included in this package (mce_decode).
+
+* The latest code for this project can be found at the googlecode site:
+  	http://mcedaemon.googlecode.com
+  The mced-devel mailing list is where development discussions and patches
+  get sent:
+  	http://groups.google.com/group/mced-devel
+
+* If there is something you need out of mced, or if something is not
+  working right, please contact me - thockin@hockin.org.
