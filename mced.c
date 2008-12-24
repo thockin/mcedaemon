@@ -277,6 +277,7 @@ open_log(void)
 {
 	int nullfd;
 	int log_opts;
+	int ret;
 
 	/* open /dev/null */
 	nullfd = open("/dev/null", O_RDONLY);
@@ -293,22 +294,23 @@ open_log(void)
 	openlog(PACKAGE, log_opts, LOG_DAEMON);
 
 	/* set up stdin, stdout, stderr to /dev/null */
+	ret = 0;
 	if (dup2(nullfd, STDIN_FILENO) != STDIN_FILENO) {
 		fprintf(stderr, "%s: dup2: %s\n", progname, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 	if (!mced_debug && dup2(nullfd, STDOUT_FILENO) != STDOUT_FILENO) {
 		fprintf(stderr, "%s: dup2: %s\n", progname, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 	if (!mced_debug && dup2(nullfd, STDERR_FILENO) != STDERR_FILENO) {
 		fprintf(stderr, "%s: dup2: %s\n", progname, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 
 	close(nullfd);
 
-	return 0;
+	return ret;
 }
 
 static int
@@ -837,6 +839,7 @@ main(int argc, char **argv)
 #if BUILD_MCE_DB
 	mced_db = mcedb_open(dbdir);
 	if (!mced_db) {
+		mced_log(LOG_ERR, "aborting");
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -850,11 +853,13 @@ main(int argc, char **argv)
 
 	/* read in our configuration */
 	if (mced_read_conf(confdir) < 0) {
+		mced_log(LOG_ERR, "aborting");
 		exit(EXIT_FAILURE);
 	}
 
 	/* create our pidfile */
 	if (create_pidfile() < 0) {
+		mced_log(LOG_ERR, "aborting");
 		exit(EXIT_FAILURE);
 	}
 

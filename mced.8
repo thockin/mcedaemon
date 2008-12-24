@@ -62,7 +62,7 @@ cause a rule to not load.
 To force \fBmced\fP to reload the rule configuration, send it a SIGHUP.
 .PP
 In addition to rule files, \fBmced\fP also accepts connections on a UNIX 
-domain socket (\fI/var/run/mced/mced.socket\fP by default).  Any application
+domain socket (\fI/var/run/mced.socket\fP by default).  Any application
 may connect to this socket.  Once connected, \fBmced\fP will send the text of 
 all mce events to the client (formatted as "%c %b %s %a %m %g %t %b").
 \fbmced\fp will not close the client socket except in the case of a sighup

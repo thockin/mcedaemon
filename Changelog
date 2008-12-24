@@ -4,6 +4,10 @@
   - Use MCi_STATUS.OVER to report overflows. Rate limit this to once per
     10 seconds. [mced.c, mced.h]
   - Check the flags from mcelog, and report overflows. [mced.c, mced.h]
+  - Fix a small potential leak in the error path of open_log. [mced.c]
+  - Change the socketpath to be in /var/run, rather than a specific subdir
+    thereof. [mced.c]
+  - Add log messages if the daemon fails to start up properly. [mced.c]
 * Mon Dec 22 2008  Tim Hockin <thockin@hockin.org>
   - Fix some wording in the man page wrt rate limiting. [mced.8]
   - Make the default bootnum be -1, rather than 0. [mced.c, mced.h, mced.8]
