@@ -116,7 +116,7 @@ handle_cmdline(int *argc, char ***argv)
 #endif
 		"Set the current boot number.",		/* bootnum */
 		"Set the configuration directory.",	/* confdir */
-		"Increase debugging level (implies -f -l).",/* debug */
+		"Increase debugging level (implies -f).",/* debug */
 		"Use the specified mcelog device.",	/* device */
 		"Run in the foreground.",		/* foreground */
 		"Set the group on the socket file.",	/* socketgroup */
