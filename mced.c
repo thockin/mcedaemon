@@ -280,7 +280,7 @@ open_log(void)
 	int ret;
 
 	/* open /dev/null */
-	nullfd = open("/dev/null", O_RDONLY);
+	nullfd = open("/dev/null", O_RDWR);
 	if (nullfd < 0) {
 		fprintf(stderr, "%s: can't open %s: %s\n", progname, 
 			"/dev/null", strerror(errno));
@@ -742,6 +742,7 @@ do_pending_mces(int mce_fd)
 int
 check_mcelog_poll(int mce_fd)
 {
+	//FIXME: on a machine with a lot of errors, this loops forever!
 	while (1) {
 		int r;
 		struct pollfd ar[1];

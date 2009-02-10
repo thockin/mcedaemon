@@ -1,8 +1,12 @@
 %changelog
+* Mon Feb 09 2009  Tim Hockin <thockin@hockin.org?
+  - Open /dev/null O_RDWR, rather than O_RDONLY. [mced.c]
+
 * Thu Jan 08 2009  Tim Hockin <thockin@hockin.org>
   - Fix help string - -d does not imply -l. [mced.c]
+
 * Tue Dec 23 2008  Tim Hockin <thockin@hockin.org>
-  - Add generic rate limiting support, used for some log messages.  [mced.c]
+  - Add generic rate limiting support, used for some log messages. [mced.c]
   - Use MCi_STATUS.OVER to report overflows. Rate limit this to once per
     10 seconds. [mced.c, mced.h]
   - Check the flags from mcelog, and report overflows. [mced.c, mced.h]
@@ -10,26 +14,29 @@
   - Change the socketpath to be in /var/run, rather than a specific subdir
     thereof. [mced.c]
   - Add log messages if the daemon fails to start up properly. [mced.c]
+
 * Mon Dec 22 2008  Tim Hockin <thockin@hockin.org>
   - Fix some wording in the man page wrt rate limiting. [mced.8]
   - Make the default bootnum be -1, rather than 0. [mced.c, mced.h, mced.8]
   - Add TSC, CS, and IP fields to struct mce from kenrel_mce. [mced.c,
     mced.h, mced.8, rules.c]
   - Fix a leak closedir() in case of malloc() failure. [rules.c]
+
 * Sun Dec 21 2008  Tim Hockin <thockin@hockin.org>
   - Do not imply -l with -d. [mced.c, rules.c]
   - Exit if a fake mcelog device closes. [mced.c]
   - Change numeric commandline args to be long, not int. [mced.c]
-  - Add rate limiting via -r (--ratelimit) for MCEs.  [mced.c, mced.8]
+  - Add rate limiting via -r (--ratelimit) for MCEs. [mced.c, mced.8]
   - Add mcelog_faker for testing. [mcelog_Faker.c]
+
 * Sun Dec 14 2008  Tim Hockin <thockin@hockin.org>
   - Fix Changelog ordering. [Changelog]
   - Change -i (--interval) to be -x (--max_interval) and -n (--mininterval)
     options. [mced.c, mced.h, mced.8]
   - Add support for using a FIFO as /dev/mcelog for testing.  Compiled off
-    by default. This require O_NONBLOCK on the open().  [mced.c, Makefile]
+    by default. This require O_NONBLOCK on the open(). [mced.c, Makefile]
   - Make mced_vlog() static. [mced.h, mced.c]
-  - Move the GCC printf attribute to th header.  [mced.c, mced.h]
+  - Move the GCC printf attribute to th header. [mced.c, mced.h]
   - Tidy up debug prints around the interval adjustment logic. [mced.c]
   - Detect if poll() timed out, and use that in the interval adjustment
     logic. [mced.c]
@@ -42,7 +49,9 @@
   - Add -l (--logevents) option to enable logging of all events.  The new
     default is to NOT log events. [mced.c, mced.h, mced.8, rules.c]
   - Close client file descriptors on exec(). [mced.c]
+
 * Tue Sep 16 2008  Tim Hockin <thockin@google.com>
   - Use rules.mk.
+
 * Thu May 24 2007  Tim Hockin <thockin@hockin.org>
   - Initial import.
