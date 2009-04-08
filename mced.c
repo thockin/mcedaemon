@@ -934,7 +934,7 @@ main(int argc, char **argv)
 		/*
 		 * Was it an MCE?  Be paranoid and always check.
 		 */
-		{
+		if (mce_idx >= 0 && ar[mce_idx].revents) {
 			int n;
 
 			/* check for MCEs */
@@ -980,7 +980,7 @@ main(int argc, char **argv)
 			cli_fd = ud_accept(sock_fd, &creds);
 			if (cli_fd < 0) {
 				mced_perror(LOG_ERR,
-				    "ERR: can't accept client\n");
+				    "ERR: can't accept client");
 				accept_errors++;
 				if (accept_errors >= 5) {
 					mced_log(LOG_ERR, "giving up\n");
