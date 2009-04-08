@@ -1,6 +1,11 @@
 %changelog
 * Mon Mar 07 2009  Tim Hockin <thockin@hockin.org?
   - Change default socket mode to 0600. [mced.c]
+  - Add a -C (--clientmax) command line flag to set max number of non-root
+    socket connections. [mced.c rules.c mced.h]
+  - Set the maximum number of socket clients to 256 by default. [mced.h]
+  - Close clients that have disconnected. [mced.c rules.c]
+  - Give up and exit() if 5 accept() calls fail in a row. [mced.c]
 
 * Mon Feb 09 2009  Tim Hockin <thockin@hockin.org?
   - Open /dev/null O_RDWR, rather than O_RDONLY. [mced.c]

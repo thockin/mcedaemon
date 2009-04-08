@@ -53,6 +53,9 @@ int mced_debug;
 /* do we log event info? */
 int mced_log_events;
 
+/* the number of non-root clients that are connected */
+int mced_non_root_clients;
+
 #if BUILD_MCE_DB
 /* global database handle */
 struct mce_database *mced_db;
@@ -72,6 +75,7 @@ static const char *socketgroup;
 static mode_t socketmode = MCED_SOCKETMODE;
 static int foreground;
 static const char *pidfile = MCED_PIDFILE;
+static int clientmax = MCED_CLIENTMAX;
 #if BUILD_MCE_DB
 static const char *dbdir = MCED_DBDIR;
 #endif
@@ -94,6 +98,7 @@ handle_cmdline(int *argc, char ***argv)
 #endif
 		{"bootnum", 1, 0, 'b'},
 		{"confdir", 1, 0, 'c'},
+		{"clientmax", 1, 0, 'C'},
 		{"debug", 0, 0, 'd'},
 		{"device", 1, 0, 'D'},
 		{"foreground", 0, 0, 'f'},
@@ -116,6 +121,7 @@ handle_cmdline(int *argc, char ***argv)
 #endif
 		"Set the current boot number.",		/* bootnum */
 		"Set the configuration directory.",	/* confdir */
+		"Set the limit on non-root socket connections.",/* clientmax */
 		"Increase debugging level (implies -f).",/* debug */
 		"Use the specified mcelog device.",	/* device */
 		"Run in the foreground.",		/* foreground */
@@ -141,7 +147,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:dD:fg:lm:n:s:p:r:Sx:vh", opts, NULL);
+		    "b:c:C:dD:fg:lm:n:s:p:r:Sx:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -156,6 +162,9 @@ handle_cmdline(int *argc, char ***argv)
 			break;
 		case 'c':
 			confdir = optarg;
+			break;
+		case 'C':
+			clientmax = strtol(optarg, NULL, 0);
 			break;
 		case 'd':
 			foreground = 1;
@@ -919,6 +928,9 @@ main(int argc, char **argv)
 			timed_out = 0;
 		}
 
+		/* house keeping */
+		mced_close_dead_clients();
+
 		/*
 		 * Was it an MCE?  Be paranoid and always check.
 		 */
@@ -954,6 +966,7 @@ main(int argc, char **argv)
 			int cli_fd;
 			struct ucred creds;
 			char buf[32];
+			static int accept_errors;
 
 			/* this shouldn't happen */
 			if (!ar[sock_idx].revents & POLLIN) {
@@ -968,7 +981,23 @@ main(int argc, char **argv)
 			if (cli_fd < 0) {
 				mced_perror(LOG_ERR,
 				    "ERR: can't accept client\n");
+				accept_errors++;
+				if (accept_errors >= 5) {
+					mced_log(LOG_ERR, "giving up\n");
+					clean_exit_with_status(EXIT_FAILURE);
+				}
 				continue;
+			}
+			accept_errors = 0;
+			if (creds.uid != 0
+			 && mced_non_root_clients >= clientmax) {
+				close(cli_fd);
+				mced_log(LOG_ERR,
+				         "too many non-root clients\n");
+				continue;
+			}
+			if (creds.uid != 0) {
+				mced_non_root_clients++;
 			}
 			fcntl(cli_fd, F_SETFD, FD_CLOEXEC);
 			snprintf(buf, sizeof(buf)-1, "%d[%d:%d]",

@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/poll.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -38,6 +39,7 @@
 #include <signal.h>
 
 #include "mced.h"
+#include "ud_socket.h"
 
 /*
  * What is a rule?
@@ -404,6 +406,55 @@ free_rule(struct rule *r)
 	free(r);
 }
 
+static int
+client_is_dead(int fd)
+{
+	struct pollfd pfd;
+	int r;
+
+	/* check the fd to see if it is dead */
+	pfd.fd = fd;
+	pfd.events = POLLERR | POLLHUP;
+	r = poll(&pfd, 1, 0);
+
+	if (r < 0) {
+		mced_perror(LOG_ERR, "ERR: poll()");
+		return 0;
+	}
+
+	return pfd.revents;
+}
+
+void
+mced_close_dead_clients(void)
+{
+	struct rule *p;
+
+	lock_rules();
+
+	/* scan our client list */
+	p = client_list.head;
+	while (p) {
+		struct rule *next = p->next;
+		if (client_is_dead(p->action.fd)) {
+			struct ucred cred;
+			/* closed */
+			mced_log(LOG_NOTICE, "client %s has disconnected\n",
+			         p->origin);
+			delist_rule(&client_list, p);
+			ud_get_peercred(p->action.fd, &cred);
+			if (cred.uid != 0) {
+				mced_non_root_clients--;
+			}
+			close(p->action.fd);
+			free_rule(p);
+		}
+		p = next;
+	}
+
+	unlock_rules();
+}
+
 /*
  * the main hook for propogating MCEs
  */
@@ -566,10 +617,15 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		(unsigned long long)mce->gstatus, mce->time, mce->boot);
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
+		struct ucred cred;
 		/* closed */
 		mced_log(LOG_NOTICE, "client %s has disconnected\n",
 		         rule->origin);
 		delist_rule(&client_list, rule);
+		ud_get_peercred(rule->action.fd, &cred);
+		if (cred.uid != 0) {
+			mced_non_root_clients--;
+		}
 		close(rule->action.fd);
 		free_rule(rule);
 		return -1;

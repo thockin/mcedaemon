@@ -1,4 +1,4 @@
-.TH acpid 8 ""
+.TH mced 8 ""
 .\" Copyright (c) 2007 Tim Hockin (thockin@google.com)
 .SH NAME
 mced \- Machine Check Event daemon
@@ -82,6 +82,10 @@ and which can be passed to handlers.  Default is -1.
 .BI \-c "\fR, \fP" \--confdir " directory"
 This option changes the directory in which \fBmced\fP looks for rule 
 configuration files.  Default is \fI/etc/mced\fP.
+.TP 12
+.BI \-C "\fR, \fP" \--clientmax " number"
+This option changes the maximum number of non-root socket connections which
+can be made to the \fBmced\fP socket.  Default is \fI128\fP.
 .TP 12
 .BI \-d "\fR, \fP" \--debug
 This option increases the \fBmced\fP debug level by one.  If the debug level

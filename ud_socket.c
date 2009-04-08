@@ -102,3 +102,10 @@ ud_connect(const char *name)
 	return fd;
 }
 
+int
+ud_get_peercred(int fd, struct ucred *cred)
+{
+	socklen_t len = sizeof(struct ucred);
+	getsockopt(fd, SOL_SOCKET, SO_PEERCRED, cred, &len);
+	return 0;
+}
