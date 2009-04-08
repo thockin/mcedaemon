@@ -344,7 +344,7 @@ create_pidfile(void)
 }
 
 static void
-clean_exit(int sig __attribute__((unused)))
+clean_exit_with_status(int status)
 {
 	mced_cleanup_rules(1);
 #if BUILD_MCE_DB
@@ -352,7 +352,13 @@ clean_exit(int sig __attribute__((unused)))
 #endif
 	unlink(pidfile);
 	mced_log(LOG_NOTICE, "exiting\n");
-	exit(EXIT_SUCCESS);
+	exit(status);
+}
+
+static void
+clean_exit(int sig __attribute__((unused)))
+{
+	clean_exit_with_status(EXIT_SUCCESS);
 }
 
 static void
