@@ -5,7 +5,7 @@ TOPDIR = $(shell pwd)
 BUILD_CONFIG = $(TOPDIR)/BUILD_CONFIG
 
 # project version
-PRJ_VERSION = 1.0.0
+PRJ_VERSION = 1.0.1
 
 # assign build options default values
 # Use '?=' variable assignment so ENV variables can be used.
@@ -23,7 +23,7 @@ DEFS += -D_GNU_SOURCE
 CWARNS += -Wundef -Wshadow
 CFLAGS += -DBUILD_MCE_DB=$(BUILD_MCE_DB)
 CFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
-ifneq "$(BUILD_MCE_DB)" "0"
+ifneq "$(strip $(BUILD_MCE_DB))" "0"
 LDFLAGS += -ldb
 endif
 

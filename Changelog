@@ -1,6 +1,8 @@
 %changelog
 * Sat May 02 2009  Tim Hockin <thockin@hockin.org>
   - Bump to version 1.0.0 for release. [Makefile]
+  - Bump to version 1.0.1 after release. [Makefile]
+  - Fix libdb linking erroneously when not needed. [Makefile]
 
 * Mon Mar 07 2009  Tim Hockin <thockin@hockin.org>
   - Change default socket mode to 0600. [mced.c]
