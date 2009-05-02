@@ -83,18 +83,19 @@ install: $(PROGS) man
 
 DISTTMP=/tmp
 dist:
-	rm -rf $(DISTTMP)/mced-$(VERSION)
-	mkdir -p $(DISTTMP)/mced-$(VERSION)
-	cp -a * $(DISTTMP)/mced-$(VERSION)
-	find $(DISTTMP)/mced-$(VERSION) -type d -name CVS | xargs rm -rf
-	make -C $(DISTTMP)/mced-$(VERSION) clean
-	tar -C $(DISTTMP) -zcvf mced-$(VERSION).tar.gz mced-$(VERSION)
-	rm -rf $(DISTTMP)/mced-$(VERSION)
+	rm -rf $(DISTTMP)/mced-$(PRJ_VERSION)
+	mkdir -p $(DISTTMP)/mced-$(PRJ_VERSION)
+	cp -a * $(DISTTMP)/mced-$(PRJ_VERSION)
+	find $(DISTTMP)/mced-$(PRJ_VERSION) -type d -name .svn | xargs rm -rf
+	make -C $(DISTTMP)/mced-$(PRJ_VERSION) distclean
+	tar -C $(DISTTMP) -zcvf mced-$(PRJ_VERSION).tar.gz mced-$(PRJ_VERSION)
+	rm -rf $(DISTTMP)/mced-$(PRJ_VERSION)
 
 clean:
 	$(RM) $(PROGS) $(MAN8GZ) *.o
 
 distclean:
+	$(RM) .depend
 	$(RM) $(BUILD_CONFIG)
 
 .depend: $(mced_SRCS) $(mce_listen_SRCS)
