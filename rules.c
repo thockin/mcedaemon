@@ -120,7 +120,7 @@ mced_read_conf(const char *confdir)
 
 		len += strlen(confdir) + 2;
 
-		file = (char *)malloc(len);
+		file = malloc(len);
 		if (!file) {
 			mced_perror(LOG_ERR, "ERR: malloc()");
 			closedir(dir);

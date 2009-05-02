@@ -5,12 +5,12 @@ TOPDIR = $(shell pwd)
 BUILD_CONFIG = $(TOPDIR)/BUILD_CONFIG
 
 # project version
-PRJ_VERSION = 0.5.2
+PRJ_VERSION = 1.0.0
 
 # assign build options default values
 # Use '?=' variable assignment so ENV variables can be used.
 
-DEBUG ?= 1			# boolean
+DEBUG ?= 0			# boolean
 STATIC ?= 0			# option: 0=no, 1=yes, 2=partial
 PROFILE ?= 0			# boolean
 BUILD_MCE_DB ?= 0		# boolean

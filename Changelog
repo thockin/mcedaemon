@@ -1,5 +1,8 @@
 %changelog
-* Mon Mar 07 2009  Tim Hockin <thockin@hockin.org?
+* Sat May 02 2009  Tim Hockin <thockin@hockin.org>
+  - Bump to version 1.0.0 for release. [Makefile]
+
+* Mon Mar 07 2009  Tim Hockin <thockin@hockin.org>
   - Change default socket mode to 0600. [mced.c]
   - Add a -C (--clientmax) command line flag to set max number of non-root
     socket connections. [mced.c rules.c mced.h]
