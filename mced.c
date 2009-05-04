@@ -365,8 +365,9 @@ clean_exit_with_status(int status)
 }
 
 static void
-clean_exit(int sig __attribute__((unused)))
+clean_exit(int sig)
 {
+	mced_log(LOG_NOTICE, "caught signal %d\n", sig);
 	clean_exit_with_status(EXIT_SUCCESS);
 }
 
@@ -1006,6 +1007,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	clean_exit(EXIT_SUCCESS);
+	clean_exit_with_status(EXIT_SUCCESS);
 	return 0;
 }

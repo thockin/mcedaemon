@@ -13,7 +13,9 @@ When an event occurs, mce_listen will print it on stdout.
 .SH OPTIONS
 .TP
 .BI \-c "\fR, \fP" \--count " events"
-Receive up to a maximum number of MCE events, then exit.
+Receive up to a maximum number of MCE events, then exit.  Specifying 0
+events here will cause \fBmce_listen\fP to open the connection and
+immediately exit.  This is useful as a 'ping' of sorts.
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
 This option changes the name of the UNIX domain socket which \fBmced\fP opens.

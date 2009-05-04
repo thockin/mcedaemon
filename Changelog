@@ -1,4 +1,8 @@
 %changelog
+* Mon May 04 2009  Tim Hockin <thockin@hockin.org>
+  - Make mce_listen accept '-c 0' as a ping. [mce_listen.c mce_listen.8]
+  - Log a message when we take a clean_exit signal. [mced.c]
+
 * Sat May 02 2009  Tim Hockin <thockin@hockin.org>
   - Bump to version 1.0.0 for release. [Makefile]
   - Bump to version 1.0.1 after release. [Makefile]

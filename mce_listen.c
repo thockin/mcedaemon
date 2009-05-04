@@ -48,7 +48,7 @@ static char *read_line(int fd);
 
 static const char *progname;
 static const char *socketfile = MCED_SOCKETFILE;
-static int max_events;
+static int max_events = -1;
 
 static void
 time_expired(int signum __attribute__((unused)))
@@ -80,6 +80,10 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	fcntl(sock_fd, F_SETFD, FD_CLOEXEC);
+
+	if (max_events == 0) {
+		exit(EXIT_SUCCESS);
+	}
 
 	/* set stdout to be line buffered */
 	setvbuf(stdout, NULL, _IOLBF, 0);
