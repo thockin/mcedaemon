@@ -133,6 +133,11 @@ adjust based on real timings of the system, but there is only so much
 accuracy to be had.
 Default is no rate limit.
 .TP
+.BI \-R "\fR, \fP" \--retrydev
+This option tells \fBmced\fP to retry in the event of /dev/mcelog failing
+to open. \fBmced\fP will retry the device at every polling interval.  See
+\-x (\--maxinterval) for a description of the polling algorithm.
+.TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
 This option changes the name of the UNIX domain socket which \fBmced\fP opens.
 Default is \fI/var/run/mced/mced.socket\fP.

@@ -1,4 +1,9 @@
 %changelog
+* Thu May 07 2009  Tim Hockin <thockin@hockin.org>
+  - Convert all fprintf() calls to mced_log(). [mced.c]
+  - Add -R (--retrydev) option to make mced retry /dev/mcelog if it fails
+    to open. [mced.c, mced.8]
+
 * Mon May 04 2009  Tim Hockin <thockin@hockin.org>
   - Make mce_listen accept '-c 0' as a ping. [mce_listen.c mce_listen.8]
   - Log a message when we take a clean_exit signal. [mced.c]
