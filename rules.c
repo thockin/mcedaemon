@@ -304,7 +304,9 @@ mced_add_client(int clifd, const char *origin)
 	struct rule *r;
 	int nrules = 0;
 
-	mced_log(LOG_NOTICE, "client connected from %s\n", origin);
+	if (mced_debug) {
+		mced_log(LOG_NOTICE, "client connected from %s\n", origin);
+	}
 
 	r = parse_client(clifd);
 	if (r) {
@@ -313,8 +315,10 @@ mced_add_client(int clifd, const char *origin)
 		nrules++;
 	}
 
-	mced_log(LOG_INFO, "%d client rule%s loaded\n",
-	    nrules, (nrules == 1)?"":"s");
+	if (mced_debug) {
+		mced_log(LOG_INFO, "%d client rule%s loaded\n",
+		    nrules, (nrules == 1)?"":"s");
+	}
 
 	return 0;
 }
@@ -439,8 +443,11 @@ mced_close_dead_clients(void)
 		if (client_is_dead(p->action.fd)) {
 			struct ucred cred;
 			/* closed */
-			mced_log(LOG_NOTICE, "client %s has disconnected\n",
-			         p->origin);
+			if (mced_debug) {
+				mced_log(LOG_NOTICE,
+				         "client %s has disconnected\n",
+				         p->origin);
+			}
 			delist_rule(&client_list, p);
 			ud_get_peercred(p->action.fd, &cred);
 			if (cred.uid != 0) {

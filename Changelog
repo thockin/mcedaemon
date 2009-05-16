@@ -1,4 +1,7 @@
 %changelog
+* Fri May 15 2009  Tim Hockin <thockin@hockin.org>
+  - Make client connect/disconnect log messages be debug-only. [rules.c]
+
 * Thu May 07 2009  Tim Hockin <thockin@hockin.org>
   - Convert all fprintf() calls to mced_log(). [mced.c]
   - Add -R (--retrydev) option to make mced retry /dev/mcelog if it fails
