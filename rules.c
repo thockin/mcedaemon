@@ -137,7 +137,7 @@ mced_read_conf(const char *confdir)
 			continue; /* keep trying the rest of the files */
 		}
 		if (!S_ISREG(stbuf.st_mode)) {
-			mced_log(LOG_DEBUG, "skipping non-file %s\n", file);
+			mced_debug(1, "DBG: skipping non-file %s\n", file);
 			free(file);
 			continue; /* skip non-regular files */
 		}
@@ -168,9 +168,7 @@ mced_cleanup_rules(int do_detach)
 
 	lock_rules();
 
-	if (mced_debug >= 3) {
-		mced_log(LOG_DEBUG, "DBG: cleaning up rules\n");
-	}
+	mced_debug(3, "DBG: cleaning up rules\n");
 
 	if (do_detach) {
 		/* tell our clients to buzz off */
@@ -206,9 +204,7 @@ parse_file(const char *file)
 	int line = 0;
 	struct rule *r;
 
-	if (mced_debug) {
-		mced_log(LOG_DEBUG, "DBG: parsing conf file %s\n", file);
-	}
+	mced_debug(1, "DBG: parsing conf file %s\n", file);
 
 	fp = fopen(file, "r");
 	if (!fp) {
@@ -263,10 +259,7 @@ parse_file(const char *file)
 				file, line);
 			continue;
 		}
-		if (mced_debug >= 3) {
-			mced_log(LOG_DEBUG,
-			    "DBG:    key=\"%s\" val=\"%s\"\n", key, val);
-		}
+		mced_debug(3, "DBG:    key=\"%s\" val=\"%s\"\n", key, val);
 
 		/* handle the parsed line */
 		if (!strcasecmp(key, "action")) {
@@ -285,10 +278,7 @@ parse_file(const char *file)
 		}
 	}
 	if (!r->action.cmd) {
-		if (mced_debug) {
-			mced_log(LOG_DEBUG,
-			    "DBG: skipping incomplete file %s\n", file);
-		}
+		mced_debug(1, "DBG: skipping incomplete file %s\n", file);
 		free_rule(r);
 		fclose(fp);
 		return NULL;
@@ -304,9 +294,7 @@ mced_add_client(int clifd, const char *origin)
 	struct rule *r;
 	int nrules = 0;
 
-	if (mced_debug) {
-		mced_log(LOG_NOTICE, "client connected from %s\n", origin);
-	}
+	mced_log(LOG_NOTICE, "client connected from %s\n", origin);
 
 	r = parse_client(clifd);
 	if (r) {
@@ -315,10 +303,8 @@ mced_add_client(int clifd, const char *origin)
 		nrules++;
 	}
 
-	if (mced_debug) {
-		mced_log(LOG_INFO, "%d client rule%s loaded\n",
-		    nrules, (nrules == 1)?"":"s");
-	}
+	mced_log(LOG_INFO, "%d client rule%s loaded\n",
+	         nrules, (nrules == 1)?"":"s");
 
 	return 0;
 }
@@ -443,11 +429,8 @@ mced_close_dead_clients(void)
 		if (client_is_dead(p->action.fd)) {
 			struct ucred cred;
 			/* closed */
-			if (mced_debug) {
-				mced_log(LOG_NOTICE,
-				         "client %s has disconnected\n",
-				         p->origin);
-			}
+			mced_log(LOG_NOTICE,
+			         "client %s has disconnected\n", p->origin);
 			delist_rule(&client_list, p);
 			ud_get_peercred(p->action.fd, &cred);
 			if (cred.uid != 0) {
@@ -484,9 +467,8 @@ mced_handle_mce(struct mce *mce)
 			/* the list can change underneath us */
 			struct rule *pnext = p->next;
 
-			if (mced_debug && mced_log_events) {
-				mced_log(LOG_DEBUG, "DBG: rule from %s\n",
-				    p->origin);
+			if (mced_log_events) {
+				mced_debug(1, "DBG: rule from %s\n", p->origin);
 			}
 			nrules++;
 			if (p->type == RULE_CMD) {
@@ -503,9 +485,9 @@ mced_handle_mce(struct mce *mce)
 
 	unlock_rules();
 
-	if (mced_debug && mced_log_events) {
-		mced_log(LOG_DEBUG, "DBG: %d total rule%s matched\n",
-			nrules, (nrules==1)?"":"s");
+	if (mced_log_events) {
+		mced_debug(1, "DBG: %d total rule%s matched\n",
+		           nrules, (nrules==1)?"":"s");
 	}
 
 	return 0;
@@ -529,18 +511,14 @@ signals_handled(void)
 static void
 lock_rules(void)
 {
-	if (mced_debug >= 4) {
-		mced_log(LOG_DEBUG, "DBG: blocking signals for rule lock\n");
-	}
+	mced_debug(4, "DBG: blocking signals for rule lock\n");
 	sigprocmask(SIG_BLOCK, signals_handled(), NULL);
 }
 
 static void
 unlock_rules(void)
 {
-	if (mced_debug >= 4) {
-		mced_log(LOG_DEBUG, "DBG: unblocking signals for rule lock\n");
-	}
+	mced_debug(4, "DBG: unblocking signals for rule lock\n");
 	sigprocmask(SIG_UNBLOCK, signals_handled(), NULL);
 }
 
@@ -667,9 +645,7 @@ safe_write(int fd, const char *buf, int len)
 
 	if (!ntries) {
 		/* crap */
-		if (mced_debug >= 2) {
-			mced_log(LOG_ERR, "uh-oh! safe_write() timed out\n");
-		}
+		mced_log(LOG_ERR, "uh-oh! safe_write() timed out\n");
 		return r;
 	}
 
@@ -767,9 +743,8 @@ parse_cmd(const char *cmd, struct mce *mce)
 			buf[used++] = *p++;
 		}
 	}
-	if (mced_debug >= 2 && mced_log_events) {
-		mced_log(LOG_DEBUG, "DBG: expanded \"%s\" -> \"%s\"\n",
-		    cmd, buf);
+	if (mced_log_events) {
+		mced_debug(2, "DBG: expanded \"%s\" -> \"%s\"\n", cmd, buf);
 	}
 
 	return buf;

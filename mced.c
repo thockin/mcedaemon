@@ -48,7 +48,7 @@
 #include "ud_socket.h"
 
 /* global debug level */
-int mced_debug;
+int mced_debug_level;
 
 /* do we log event info? */
 int mced_log_events;
@@ -173,7 +173,7 @@ handle_cmdline(int *argc, char ***argv)
 			break;
 		case 'd':
 			foreground = 1;
-			mced_debug++;
+			mced_debug_level++;
 			break;
 		case 'D':
 			device = optarg;
@@ -304,7 +304,7 @@ open_log(void)
 	}
 
 	log_opts = LOG_CONS|LOG_NDELAY;
-	if (mced_debug) {
+	if (mced_debug_level > 0) {
 		log_opts |= LOG_PERROR;
 	}
 	openlog(PACKAGE, log_opts, LOG_DAEMON);
@@ -315,11 +315,11 @@ open_log(void)
 		mced_log(LOG_ERR, "LOG_ERR: dup2: %s\n", strerror(errno));
 		ret = -1;
 	}
-	if (!mced_debug && dup2(nullfd, STDOUT_FILENO) != STDOUT_FILENO) {
+	if (!mced_debug_level && dup2(nullfd, STDOUT_FILENO) != STDOUT_FILENO) {
 		mced_log(LOG_ERR, "ERR: dup2: %s\n", strerror(errno));
 		ret = -1;
 	}
-	if (!mced_debug && dup2(nullfd, STDERR_FILENO) != STDERR_FILENO) {
+	if (!mced_debug_level && dup2(nullfd, STDERR_FILENO) != STDERR_FILENO) {
 		mced_log(LOG_ERR, "ERR: dup2: %s\n", strerror(errno));
 		ret = -1;
 	}
@@ -390,7 +390,11 @@ reload_conf(int sig __attribute__((unused)))
 static int
 mced_vlog(int level, const char *fmt, va_list args)
 {
-	vsyslog(level, fmt, args);
+	if (log_is_open) {
+		vsyslog(level, fmt, args);
+	} else {
+		vfprintf(stderr, fmt, args);
+	}
 	return 0;
 }
 
@@ -401,11 +405,24 @@ mced_log(int level, const char *fmt, ...)
 	int r;
 
 	va_start(args, fmt);
-	if (log_is_open) {
-		r = mced_vlog(level, fmt, args);
-	} else {
-		r = vfprintf(stderr, fmt, args);
+	r = mced_vlog(level, fmt, args);
+	va_end(args);
+
+	return r;
+}
+
+int
+mced_debug(int min_dbg_lvl, const char *fmt, ...)
+{
+	va_list args;
+	int r;
+
+	if (mced_debug_level < min_dbg_lvl) {
+		return 0;
 	}
+
+	va_start(args, fmt);
+	r = mced_vlog(LOG_DEBUG, fmt, args);
 	va_end(args);
 
 	return r;
@@ -554,9 +571,8 @@ do_one_mce(struct kernel_mce *kmce)
 	if (mcedb_append(mced_db, &mce) < 0) {
 		mced_log(LOG_ERR,
 		    "ERR: failed to append MCE to database - not good!!\n");
-	} else if (mced_debug) {
-		mced_log(LOG_DEBUG, "DBG: logged MCE #%d\n",
-		    mcedb_end(mced_db)-1);
+	} else {
+		mced_debug(1, "DBG: logged MCE #%d\n", mcedb_end(mced_db)-1);
 	}
 #endif
 	if (mced_log_events) {
@@ -709,9 +725,9 @@ do_pending_mces(int mce_fd)
 				}
 			}
 
-			if (mced_debug && mced_log_events) {
-				mced_log(LOG_DEBUG, "DBG: got %d MCE%s\n",
-				    nmces, (nmces==1)?"":"s");
+			if (mced_log_events) {
+				mced_debug(1, "DBG: got %d MCE%s\n",
+				           nmces, (nmces==1)?"":"s");
 			}
 
 			/* handle all the new MCEs */
@@ -959,9 +975,9 @@ main(int argc, char **argv)
 			sock_idx = nfds;
 			nfds++;
 		}
-		if (mced_debug > 1 && max_interval_ms > 0) {
-			mced_log(LOG_DEBUG, "DBG: next interval = %d msecs\n",
-			         interval_ms);
+		if (max_interval_ms > 0) {
+			mced_debug(2, "DBG: next interval = %d msecs\n",
+			           interval_ms);
 		}
 		r = poll(ar, nfds, interval_ms);
 		if (r < 0 && errno == EINTR) {
@@ -973,7 +989,7 @@ main(int argc, char **argv)
 		/* see if poll() timed out */
 		if (r == 0) {
 			timed_out = 1;
-			mced_log(LOG_DEBUG, "DBG: poll timeout\n");
+			mced_debug(1, "DBG: poll timeout\n");
 		} else {
 			timed_out = 0;
 		}

@@ -1,4 +1,8 @@
 %changelog
+* Tue Aug 11 2009  Tim Hockin <thockin@google.com>
+  - Clean up debug logging to not emit messages unless -d is explicitly 
+    specified.  [mced.c, mced.h, rules.c]
+
 * Fri May 15 2009  Tim Hockin <thockin@hockin.org>
   - Make client connect/disconnect log messages be debug-only. [rules.c]
 
