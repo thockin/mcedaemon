@@ -1,4 +1,7 @@
 %changelog
+* Wed Sep 02 2009  Tim Hockin <thockin@google.com>
+  - Fix small regression in logging behavior wrt client connections. [rules.c]
+
 * Tue Aug 11 2009  Tim Hockin <thockin@google.com>
   - Clean up debug logging to not emit messages unless -d is explicitly 
     specified.  [mced.c, mced.h, rules.c]
