@@ -107,6 +107,7 @@ PRJ_CDEBUG   = -O0 -ggdb -DDEBUG -UNDEBUG $(PRJ_TRACE)
 PRJ_CXXDEBUG = $(PRJ_CDEBUG) -fno-default-inline
 else
 PRJ_CDEBUG   = -O2 -DNDEBUG
+PRJ_LDFLAGS += -s
 endif
 
 CPPFLAGS += $(PRJ_DEFS) $(PRJ_INCLUDES)
