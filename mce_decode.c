@@ -35,14 +35,14 @@ dump_mce(struct mce *mce)
 	printf("  cpu:     %d\n", mce->cpu);
 	printf("  bank:    %d\n", mce->bank);
 
-	printf("  gstatus: 0x%016llx\n", mce->gstatus);
+	printf("  gstatus: 0x%016llx\n", (unsigned long long)mce->gstatus);
 	if (mce->gstatus & BIT(0))
 		printf("    [0]     = restart IP is valid\n");
 	if (mce->gstatus & BIT(1))
 		printf("    [1]     = error IP is valid\n");
 	if (mce->gstatus & BIT(2))
 		printf("    [2]     = machine check in progress\n");
-	printf("  status:  0x%016llx\n", mce->status);
+	printf("  status:  0x%016llx\n", (unsigned long long)mce->status);
 	if (mce->status & BIT(63))
 		printf("    [63]    = error is valid\n");
 	if (mce->status & BIT(62))
@@ -67,10 +67,11 @@ dump_mce(struct mce *mce)
 	    (unsigned)((mce->status>>32) & 0xffffff));
 
 	if (mce->status & BIT(58))
-		printf("  address: 0x%016llx\n", mce->address);
+		printf("  address: 0x%016llx\n",
+		       (unsigned long long)mce->address);
 
 	if (mce->status & BIT(59))
-		printf("  misc:    0x%016llx\n", mce->misc);
+		printf("  misc:    0x%016llx\n", (unsigned long long)mce->misc);
 }
 
 static void

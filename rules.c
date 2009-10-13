@@ -606,7 +606,8 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		mce->cpu, mce->bank, (unsigned long long)mce->status,
 		(unsigned long long)mce->address,
 		(unsigned long long)mce->misc,
-		(unsigned long long)mce->gstatus, mce->time, mce->boot);
+		(unsigned long long)mce->gstatus,
+		(unsigned long long)mce->time, mce->boot);
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
 		struct ucred cred;
