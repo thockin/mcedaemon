@@ -1,4 +1,8 @@
 %changelog
+* Wed Oct 14 2009  Tim Hockin <thockin@google.com>
+  - Factor out kernel MCE record length in prep for 2.6.31 compatibility
+    updates.  [mced.h, mced.c]
+
 * Tue Oct 13 2009  Tim Hockin <thockin@google.com>
   - Fix 64-bit print warnings. [rules.c, mce_decode.c]
 

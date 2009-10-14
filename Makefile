@@ -13,7 +13,7 @@ PRJ_VERSION = 1.0.3
 DEBUG ?= 0			# boolean
 STATIC ?= 0			# option: 0=no, 1=yes, 2=partial
 PROFILE ?= 0			# boolean
-BUILD_MCE_DB ?= 0		# boolean
+BUILD_MCE_DB ?= 0		# boolean (stale, needs testing)
 ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
 
 # assign any flags variables

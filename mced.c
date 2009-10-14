@@ -56,6 +56,9 @@ int mced_log_events;
 /* the number of non-root clients that are connected */
 int mced_non_root_clients;
 
+/* the size of a kernel MCE record in bytes */
+int mced_kernel_record_len;
+
 #if BUILD_MCE_DB
 /* global database handle */
 struct mce_database *mced_db;
@@ -689,7 +692,7 @@ do_pending_mces(int mce_fd)
 		int n;
 
 		/* read all of the MCE data */
-		n = read(mce_fd, kmce, sizeof(kmce)*loglen);
+		n = read(mce_fd, kmce, mced_kernel_record_len*loglen);
 		if (n < 0) {
 			if (fake_dev_mcelog && errno == EAGAIN) {
 				return 0;
@@ -699,7 +702,7 @@ do_pending_mces(int mce_fd)
 		}
 
 		/* did we get any MCES? */
-		nmces = n/sizeof(struct kernel_mce);
+		nmces = n/mced_kernel_record_len;
 		if (nmces > 0) {
 			int i;
 
@@ -794,11 +797,36 @@ check_mcelog_poll(int mce_fd)
 }
 
 static int
+init_kernel_mce_interface(int mce_fd)
+{
+	if (!fake_dev_mcelog
+	 && ioctl(mce_fd, MCE_GET_RECORD_LEN, &mced_kernel_record_len) < 0) {
+		static int printed_msg;
+		if (!printed_msg) {
+			printed_msg = 1;
+			mced_perror(LOG_ERR, "ERR: can't get MCE record size");
+		}
+		return -1;
+	} else if (fake_dev_mcelog) {
+		mced_kernel_record_len = sizeof(struct kernel_mce);
+	}
+	if (mced_kernel_record_len != sizeof(struct kernel_mce)) {
+		static int printed_msg;
+		if (!printed_msg) {
+			printed_msg = 1;
+			mced_log(LOG_ERR, "ERR: kernel MCE record size (%d) "
+			         "is unsupported\n", mced_kernel_record_len);
+		}
+		return -1;
+	}
+	return 0;
+}
+
+static int
 open_mcelog(const char *path)
 {
 	struct stat stbuf;
 	int mce_fd;
-	int rec_len;
 
 	if (stat(path, &stbuf) < 0) {
 		static int printed_msg;
@@ -828,25 +856,7 @@ open_mcelog(const char *path)
 		}
 		return -1;
 	}
-	if (!fake_dev_mcelog
-	 && ioctl(mce_fd, MCE_GET_RECORD_LEN, &rec_len) < 0) {
-		static int printed_msg;
-		if (!printed_msg) {
-			printed_msg = 1;
-			mced_perror(LOG_ERR, "ERR: can't get MCE record size");
-		}
-		close(mce_fd);
-		return -1;
-	} else if (fake_dev_mcelog) {
-		rec_len = sizeof(struct kernel_mce);
-	}
-	if (rec_len != sizeof(struct kernel_mce)) {
-		static int printed_msg;
-		if (!printed_msg) {
-			printed_msg = 1;
-			mced_log(LOG_ERR, "ERR: kernel MCE record size (%d) "
-			         "is unsupported\n", rec_len);
-		}
+	if (init_kernel_mce_interface(mce_fd) != 0) {
 		close(mce_fd);
 		return -1;
 	}
