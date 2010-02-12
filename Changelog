@@ -1,4 +1,8 @@
 %changelog
+* Fri Jan 12 2010  Tim Hockin <thockin@google.com>
+  - Add -o (--oflowsuppress) flag to manage overflow log message
+    suppression.  [mced.h, mced.c, mced.8]
+
 * Wed Oct 14 2009  Tim Hockin <thockin@google.com>
   - Factor out kernel MCE record length in prep for 2.6.31 compatibility
     updates.  [mced.h, mced.c]
@@ -10,7 +14,7 @@
   - Fix small regression in logging behavior wrt client connections. [rules.c]
 
 * Tue Aug 11 2009  Tim Hockin <thockin@google.com>
-  - Clean up debug logging to not emit messages unless -d is explicitly 
+  - Clean up debug logging to not emit messages unless -d is explicitly
     specified.  [mced.c, mced.h, rules.c]
 
 * Fri May 15 2009  Tim Hockin <thockin@hockin.org>

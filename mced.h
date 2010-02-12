@@ -29,18 +29,19 @@
 #include <syslog.h>
 #include <stdarg.h>
 
-#define MCED_EVENTFILE		"/dev/mcelog"
-#define MCED_MAX_INTERVAL	5000 /* milliseconds */
-#define MCED_MIN_INTERVAL	100  /* milliseconds */
-#define MCED_CONFDIR		"/etc/mced"
-#define MCED_SOCKETFILE		"/var/run/mced.socket"
-#define MCED_SOCKETMODE		0600
-#define MCED_PIDFILE		"/var/run/mced.pid"
-#define MCED_DBDIR		"/var/log/mced_db/"
-#define MCED_CLIENTMAX		128
-#define MCED_MAX_ERRS		5
+#define MCED_EVENTFILE			"/dev/mcelog"
+#define MCED_MAX_INTERVAL		5000 /* milliseconds */
+#define MCED_MIN_INTERVAL		100  /* milliseconds */
+#define MCED_CONFDIR			"/etc/mced"
+#define MCED_SOCKETFILE			"/var/run/mced.socket"
+#define MCED_SOCKETMODE			0600
+#define MCED_PIDFILE			"/var/run/mced.pid"
+#define MCED_DBDIR			"/var/log/mced_db/"
+#define MCED_CLIENTMAX			128
+#define MCED_MAX_ERRS			5
+#define MCED_OVERFLOW_SUPPRESS_TIME	10 /* seconds */
 
-#define PACKAGE 		"mced"
+#define PACKAGE				"mced"
 
 /* this structure has to match the kernel's struct mce */
 struct kernel_mce {

@@ -79,6 +79,7 @@ static mode_t socketmode = MCED_SOCKETMODE;
 static int foreground;
 static const char *pidfile = MCED_PIDFILE;
 static int clientmax = MCED_CLIENTMAX;
+static int overflow_suppress_time = MCED_OVERFLOW_SUPPRESS_TIME;
 #if BUILD_MCE_DB
 static const char *dbdir = MCED_DBDIR;
 #endif
@@ -112,6 +113,7 @@ handle_cmdline(int *argc, char ***argv)
 		{"logevents", 0, 0, 'l'},
 		{"socketmode", 1, 0, 'm'},
 		{"mininterval", 1, 0, 'n'},
+		{"oflowsuppress", 1, 0, 'o'},
 		{"pidfile", 1, 0, 'p'},
 		{"ratelimit", 1, 0, 'r'},
 		{"retrydev", 0, 0, 'R'},
@@ -135,7 +137,8 @@ handle_cmdline(int *argc, char ***argv)
 		"Set the group on the socket file.",	/* socketgroup */
 		"Log each MCE and handlers.",		/* logevents */
 		"Set the permissions on the socket file.",/* socketmode */
-		"Set the MCE polling min interval (msecs).",/* mininterval */
+		"Set the MCE polling min interval (msecs).", /* mininterval */
+		"Set the log period for overflows (secs).", /* oflowsuppress */
 		"Use the specified PID file.",		/* pidfile */
 		"Limit the number of MCEs handled per second.",/* ratelimit */
 		"Retry the mcelog device if it fails to open.",/* retrydev */
@@ -155,7 +158,7 @@ handle_cmdline(int *argc, char ***argv)
 #if BUILD_MCE_DB
 		    "B:"
 #endif
-		    "b:c:C:dD:fg:lm:n:p:r:Rs:Sx:vh", opts, NULL);
+		    "b:c:C:dD:fg:lm:n:o:p:r:Rs:Sx:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -198,6 +201,9 @@ handle_cmdline(int *argc, char ***argv)
 			if (min_interval_ms <= 0) {
 				min_interval_ms = 0;
 			}
+			break;
+		case 'o':
+			overflow_suppress_time = strtol(optarg, NULL, 0);
 			break;
 		case 'l':
 			mced_log_events = 1;
@@ -508,8 +514,6 @@ struct rate_limit {
 	.last_time = { 0, 0} \
 }
 
-#define OVERFLOW_MSG_PERIOD	10 /* seconds */
-
 /* subtract two timevals */
 static int
 elapsed_usecs(struct timeval *t0, struct timeval *t1)
@@ -553,8 +557,14 @@ static int
 do_one_mce(struct kernel_mce *kmce)
 {
 	struct mce mce;
-	static struct rate_limit hw_overflow_limit
-	    = RATE_LIMIT(OVERFLOW_MSG_PERIOD * 1000);
+	static struct rate_limit hw_overflow_limit;
+	static int rate_limit_initialized = 0;
+
+	/* initialize the rate limits based on a commandline flag */
+	if (!rate_limit_initialized) {
+		rate_limit_initialized = 1;
+		hw_overflow_limit.period = overflow_suppress_time * 1000;
+	}
 
 	/* convert the kernel's MCE struct to our own */
 	kmce_to_mce(kmce, &mce);
@@ -563,10 +573,10 @@ do_one_mce(struct kernel_mce *kmce)
 	if ((mce.status & MCI_STATUS_OVER)
 	 && (mced_log_events || !apply_rate_limit(&hw_overflow_limit))) {
 		mced_log(LOG_WARNING, "MCE overflow detected by hardware\n");
-		if (!mced_log_events) {
+		if (!mced_log_events && overflow_suppress_time) {
 			mced_log(LOG_WARNING,
 			    "(previous message suppressed for %d seconds)",
-			    OVERFLOW_MSG_PERIOD);
+			    overflow_suppress_time);
 		}
 	}
 
@@ -682,8 +692,14 @@ do_pending_mces(int mce_fd)
 	int loglen;
 	int nmces = 0;
 	int flags = 0;
-	static struct rate_limit sw_overflow_limit
-	    = RATE_LIMIT(OVERFLOW_MSG_PERIOD * 1000);
+	static struct rate_limit sw_overflow_limit;
+	static int rate_limit_initialized = 0;
+
+	/* initialize the rate limits based on a commandline flag */
+	if (!rate_limit_initialized) {
+		rate_limit_initialized = 1;
+		sw_overflow_limit.period = overflow_suppress_time * 1000;
+	}
 
 	/* check for MCEs */
 	loglen = get_loglen(mce_fd);
@@ -720,11 +736,12 @@ do_pending_mces(int mce_fd)
 			  || !apply_rate_limit(&sw_overflow_limit))){
 				mced_log(LOG_WARNING,
 				    "MCE overflow detected by software\n");
-				if (!mced_log_events) {
+				if (!mced_log_events
+				 && overflow_suppress_time) {
 					mced_log(LOG_WARNING,
 					    "(previous message suppressed "
 					    "for %d seconds)",
-					    OVERFLOW_MSG_PERIOD);
+					    overflow_suppress_time);
 				}
 			}
 

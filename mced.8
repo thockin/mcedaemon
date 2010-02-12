@@ -117,6 +117,12 @@ This option sets the minimum polling interval.  See \-x (\--maxinterval)
 for a description of the polling algorithm.  Default is \fI100\fP
 milliseconds (0.1 seconds).
 .TP
+.BI \-o "\fR, \fP" \--oflowsuppress " secs"
+This option sets the minimum time between overflow log messages.  These
+messages mean that there are more MCEs happening than the system can
+handle.  This option does not change the polling rate or handling behavior
+of \fBmced\fP, just the logging behavior. Default is \fI10\fP seconds.
+.TP
 .BI \-p "\fR, \fP" \--pidfile " filename"
 This option changes the name of the pidfile to which \fBmced\fP writes.
 If the file exists, it will be removed and over-written.
