@@ -59,6 +59,9 @@ int mced_non_root_clients;
 /* the size of a kernel MCE record in bytes */
 int mced_kernel_record_len;
 
+/* whether we force legacy socket output or not */
+int mced_legacy_socket;
+
 #if BUILD_MCE_DB
 /* global database handle */
 struct mce_database *mced_db;
@@ -78,6 +81,7 @@ static cmdline_string socketfile = MCED_SOCKETFILE;
 static cmdline_bool nosocket = 0;
 static cmdline_string socketgroup = NULL;
 static cmdline_mode_t socketmode = MCED_SOCKETMODE;
+static cmdline_bool old_socket_style = 0;
 static cmdline_bool foreground = 0;
 static cmdline_string pidfile = MCED_PIDFILE;
 static cmdline_int clientmax = MCED_CLIENTMAX;
@@ -190,6 +194,11 @@ static struct cmdline_opt mced_opts[] = {
 		"<num>", "Limit the number of non-root socket clients"
 	},
 	{
+		"O", "oldsocket",
+		CMDLINE_OPT_BOOL, &old_socket_style,
+		"", "Make socket output compatible with mced v1.x"
+	},
+	{
 		"v", "version",
 		CMDLINE_OPT_CALLBACK, do_version,
 		"", "Print version information and exit"
@@ -255,6 +264,7 @@ handle_cmdline(int *argc, const char ***argv)
 	if (mce_rate_limit <= 0) {
 		mce_rate_limit = -1;
 	}
+	mced_legacy_socket = old_socket_style;
 
 	return 0;
 }

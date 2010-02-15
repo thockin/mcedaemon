@@ -100,6 +100,7 @@ extern int mced_debug_level;
 extern int mced_log_events;
 extern int mced_non_root_clients;
 extern int mced_kernel_record_len;
+extern int mced_legacy_socket;
 extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_debug(int min_dbg_lvl, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_perror(int level, const char *str);

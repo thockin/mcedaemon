@@ -7,13 +7,13 @@ mced \- Machine Check Event daemon
 
 .SH DESCRIPTION
 \fBmced\fP is designed to notify user-space programs of Machine Check events.
-\fBmced\fP should be started during the system boot, and will run as a 
-background process, by default.  It will open the kernel mce log device 
-(\fI/dev/mcelog\fP by default) and wait for events.  When an event is 
-received, \fBmced\fP will execute it's list of handler rules.
+\fBmced\fP should be started during the system boot, and will run as a
+background process, by default.  It will open the kernel MCE log device
+(\fI/dev/mcelog\fP by default) and wait for events.  When an event is
+received, \fBmced\fP will execute its list of handler rules.
 .PP
 \fIRules\fP are defined by simple configuration files.  \fBmced\fP
-will look in a configuration directory (\fI/etc/mced/\fP by default), 
+will look in a configuration directory (\fI/etc/mced/\fP by default),
 and parse all files that do not begin with a period ('.') or end with a
 tilde ('~').  Any blank lines, or lines where the first character is a
 hash ('#') are ignored.  Extraneous lines are flagged as warnings,
@@ -23,8 +23,10 @@ case-insensitive (but whitespace matters).  The value can be up to 511
 characters, and is case and whitespace sensitive.
 .PP
 The only configuration key at this time is \fIaction\fP.  Each conf
-file must define exactly one \fIaction\fP.
-
+file must define exactly one \fIaction\fP.  Example:
+.br
+	action=/bin/true
+.br
 .PP
 The action value is a commandline, which will be invoked via \fI/bin/sh\fP
 whenever an event occurs.  The commandline may
@@ -61,18 +63,24 @@ cause a rule to not load.
 .PP
 To force \fBmced\fP to reload the rule configuration, send it a SIGHUP.
 .PP
-In addition to rule files, \fBmced\fP also accepts connections on a UNIX 
+In addition to rule files, \fBmced\fP also accepts connections on a UNIX
 domain socket (\fI/var/run/mced.socket\fP by default).  Any application
-may connect to this socket.  Once connected, \fBmced\fP will send the text of 
-all mce events to the client (formatted as "%c %b %s %a %m %g %t %b").
-\fbmced\fp will not close the client socket except in the case of a sighup
-or \fbmced\fp exiting.
-.pp
-.b mced
-will log all of it's activities, as well as the stdout and stderr of any
-actions to syslog. 
-.pp
-all the default file and directories can be changed with commandline options.
+may connect to this socket.  Once connected, \fBmced\fP will send the text of
+all MCE events to the client.  Each event is sent on a single line,
+terminated by a newline ('\\n') character.  The data is formatted as
+"%c=cpu %b=bank %s=mci_status %a=mci_address %m=mci_misc %g=mcg_status
+%t=timestamp %B=bootnum\\n").  Example:
+.br
+	%c=0 %b=4 %s=0x12345678 %a=0xabcdef %m=0x00000000 %g=0x00000000
+	%t=8675309 %B=42
+.br
+\fBmced\fP will not close the client socket except in the case of a SIGHUP
+or \fBmced\fP exiting.
+.PP
+\fBmced\fP will log all of its activities, as well as the stdout and
+stderr of any actions (depending on the \-l flag) to syslog.
+.PP
+All of the default file and directories can be changed with commandline options.
 .SH OPTIONS
 .TP 12
 .BI \-b "\fR, \fP" \--bootnum " number"
@@ -80,7 +88,7 @@ This option sets the bootnumber which \fBmced\fP uses when logging events,
 and which can be passed to handlers.  Default is -1.
 .TP 12
 .BI \-c "\fR, \fP" \--confdir " directory"
-This option changes the directory in which \fBmced\fP looks for rule 
+This option changes the directory in which \fBmced\fP looks for rule
 configuration files.  Default is \fI/etc/mced\fP.
 .TP 12
 .BI \-C "\fR, \fP" \--clientmax " number"
@@ -127,6 +135,13 @@ of \fBmced\fP, just the logging behavior. Setting this to 0 or less will
 disable rate limiting for these messages.  Using \-l (\--logevents) will
 override this option. (Default is \fI10\fP seconds.
 .TP
+.BI \-O "\fR, \fP" \--oldsocket
+This option forces \fBmced\fP to use the legacy socket data format
+(formatted as "%c %b %s %a %m %g %t %B\\n").  Use this if you have socket
+clients that require the \fBmced\fP version 1.x behavior.  Use of this
+option is discouraged, as new MCE fields are only available with the
+modern socket data format.
+.TP
 .BI \-p "\fR, \fP" \--pidfile " filename"
 This option changes the name of the pidfile to which \fBmced\fP writes.
 If the file exists, it will be removed and over-written.
@@ -153,7 +168,7 @@ This option changes the name of the UNIX domain socket which \fBmced\fP opens.
 Default is \fI/var/run/mced/mced.socket\fP.
 .TP
 .BI \-S "\fR, \fP" \--nosocket " filename"
-This option tells \fBmced\fP not to open a UNIX domain socket.  This 
+This option tells \fBmced\fP not to open a UNIX domain socket.  This
 overrides the \fI-s\fP option, and negates all other socket options.
 .TP
 .BI \-x "\fR, \fP" \--maxinterval " millisecs"
@@ -176,7 +191,7 @@ Show help and exit.
 .PD 0
 .B /dev/mcelog
 .br
-.B /etc/mce/
+.B /etc/mced/
 .br
 .B /var/run/mced/
 .br

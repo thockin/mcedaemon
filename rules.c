@@ -601,13 +601,25 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		mced_log(LOG_NOTICE, "notifying client %s\n", rule->origin);
 	}
 
-	snprintf(buf, sizeof(buf)-1,
-		"%d %d 0x%016llx 0x%016llx 0x%016llx 0x%016llx 0x%016llx %d\n",
-		mce->cpu, mce->bank, (unsigned long long)mce->status,
-		(unsigned long long)mce->address,
-		(unsigned long long)mce->misc,
-		(unsigned long long)mce->gstatus,
-		(unsigned long long)mce->time, mce->boot);
+	if (mced_legacy_socket) {
+		snprintf(buf, sizeof(buf)-1,
+		         "%d %d 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
+		         "0x%016llx %d\n",
+		         mce->cpu, mce->bank, (unsigned long long)mce->status,
+		         (unsigned long long)mce->address,
+		         (unsigned long long)mce->misc,
+		         (unsigned long long)mce->gstatus,
+		         (unsigned long long)mce->time, mce->boot);
+	} else {
+		snprintf(buf, sizeof(buf)-1,
+		         "%%c=%d %%b=%d %%s=0x%016llx %%a=0x%016llx "
+		         "%%m=0x%016llx %%g=0x%016llx %%t=0x%016llx %%B=%d\n",
+		         mce->cpu, mce->bank, (unsigned long long)mce->status,
+		         (unsigned long long)mce->address,
+		         (unsigned long long)mce->misc,
+		         (unsigned long long)mce->gstatus,
+		         (unsigned long long)mce->time, mce->boot);
+	}
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
 		struct ucred cred;
