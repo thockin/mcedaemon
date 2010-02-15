@@ -3,6 +3,7 @@
   - Use my own cmdline library, rather than getopt.  It's less fragile and
     less likely to get screwed up. [mced.c, mced.8, cmdline.c, cmdline.h,
     Makefile]
+  - Change order of commandline flags in usage output.
 
 * Fri Jan 12 2010  Tim Hockin <thockin@google.com>
   - Add -o (--oflowsuppress) flag to manage overflow log message

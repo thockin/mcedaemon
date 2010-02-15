@@ -105,6 +105,16 @@ static struct cmdline_opt mced_opts[] = {
 	},
 	#endif  /* BUILD_MCE_DB */
 	{
+		"d", "debug",
+		CMDLINE_OPT_COUNTER, &debug_level,
+		"", "Increase the debugging level (implies -f)"
+	},
+	{
+		"f", "foreground",
+		CMDLINE_OPT_BOOL, &foreground,
+		"", "Run in the foreground"
+	},
+	{
 		"b", "bootnum",
 		CMDLINE_OPT_INT, &bootnum,
 		"<num>", "Set the current boot number"
@@ -115,49 +125,14 @@ static struct cmdline_opt mced_opts[] = {
 		"<dir>", "Set the configuration directory"
 	},
 	{
-		"C", "clientmax",
-		CMDLINE_OPT_INT, &clientmax,
-		"<num>", "Limit the number of non-root socket clients"
-	},
-	{
-		"d", "debug",
-		CMDLINE_OPT_COUNTER, &debug_level,
-		"", "Increase the debugging level (implies -f)"
-	},
-	{
 		"D", "device",
 		CMDLINE_OPT_STRING, &device,
 		"<file>", "Use the specified mcelog device"
 	},
 	{
-		"f", "foreground",
-		CMDLINE_OPT_BOOL, &foreground,
-		"", "Run in the foreground"
-	},
-	{
-		"g", "socketgroup",
-		CMDLINE_OPT_STRING, &socketgroup,
-		"<group>", "Set the group on the socket file"
-	},
-	{
-		"l", "logevents",
-		CMDLINE_OPT_BOOL, &log_events,
-		"", "Log each MCE and handlers"
-	},
-	{
-		"m", "socketmode",
-		CMDLINE_OPT_MODE_T, &socketmode,
-		"<mode>", "Set the permissions on the socket file"
-	},
-	{
-		"n", "mininterval",
-		CMDLINE_OPT_INT, &min_interval_ms,
-		"<num>", "Set the MCE polling min interval (in msecs)"
-	},
-	{
-		"o", "oflowsuppress",
-		CMDLINE_OPT_INT, &overflow_suppress_time,
-		"<num>", "Set the log period for overflows (in secs)"
+		"R", "retrydev",
+		CMDLINE_OPT_BOOL, &retry_mcelog,
+		"", "Retry the mcelog device if it fails to open"
 	},
 	{
 		"p", "pidfile",
@@ -165,14 +140,29 @@ static struct cmdline_opt mced_opts[] = {
 		"<file>", "Use the specified PID file"
 	},
 	{
+		"l", "logevents",
+		CMDLINE_OPT_BOOL, &log_events,
+		"", "Log each MCE and handlers"
+	},
+	{
+		"n", "mininterval",
+		CMDLINE_OPT_INT, &min_interval_ms,
+		"<num>", "Set the MCE polling min interval (in msecs)"
+	},
+	{
+		"x", "maxinterval",
+		CMDLINE_OPT_INT, &max_interval_ms,
+		"<num>", "Set the MCE polling max interval (in msecs)"
+	},
+	{
 		"r", "ratelimit",
 		CMDLINE_OPT_INT, &mce_rate_limit,
 		"<num>", "Limit the number of MCEs handled per second"
 	},
 	{
-		"R", "retrydev",
-		CMDLINE_OPT_BOOL, &retry_mcelog,
-		"", "Retry the mcelog device if it fails to open"
+		"o", "oflowsuppress",
+		CMDLINE_OPT_INT, &overflow_suppress_time,
+		"<num>", "Set the log period for overflows (in secs)"
 	},
 	{
 		"s", "socketfile",
@@ -185,9 +175,19 @@ static struct cmdline_opt mced_opts[] = {
 		"", "Don't listen on a UNIX socket (overrides -s)"
 	},
 	{
-		"x", "maxinterval",
-		CMDLINE_OPT_INT, &max_interval_ms,
-		"<num>", "Set the MCE polling max interval (in msecs)"
+		"g", "socketgroup",
+		CMDLINE_OPT_STRING, &socketgroup,
+		"<group>", "Set the group on the socket file"
+	},
+	{
+		"m", "socketmode",
+		CMDLINE_OPT_MODE_T, &socketmode,
+		"<mode>", "Set the permissions on the socket file"
+	},
+	{
+		"C", "clientmax",
+		CMDLINE_OPT_INT, &clientmax,
+		"<num>", "Limit the number of non-root socket clients"
 	},
 	{
 		"v", "version",
