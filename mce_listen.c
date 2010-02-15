@@ -34,21 +34,22 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <time.h>
 #include <sys/poll.h>
 #include <grp.h>
 #include <signal.h>
 
 #include "mced.h"
+#include "cmdline.h"
 #include "ud_socket.h"
 
-static int handle_cmdline(int *argc, char ***argv);
+static int handle_cmdline(int *argc, const char ***argv);
 static char *read_line(int fd);
 
 static const char *progname;
-static const char *socketfile = MCED_SOCKETFILE;
-static int max_events = -1;
+static cmdline_string socketfile = MCED_SOCKETFILE;
+static cmdline_int max_events = -1;
+static cmdline_int time_limit = -1;
 
 static void
 time_expired(int signum __attribute__((unused)))
@@ -57,7 +58,7 @@ time_expired(int signum __attribute__((unused)))
 }
 
 int
-main(int argc, char **argv)
+main(int argc, const char *argv[])
 {
 	int sock_fd;
 	int ret;
@@ -66,7 +67,7 @@ main(int argc, char **argv)
 	signal(SIGALRM, time_expired);
 
 	/* learn who we really are */
-	progname = (const char *)strrchr(argv[0], '/');
+	progname = strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];
 
 	/* handle the commandline  */
@@ -117,92 +118,89 @@ main(int argc, char **argv)
 	return ret;
 }
 
-static struct option opts[] = {
-	{"count", 0, 0, 'c'},
-	{"socketfile", 1, 0, 's'},
-	{"time", 0, 0, 't'},
-	{"version", 0, 0, 'v'},
-	{"help", 0, 0, 'h'},
-	{NULL, 0, 0, 0},
-};
-static const char *opts_help[] = {
-	"Set the maximum number of events.",	/* count */
-	"Use the specified socket file.",	/* socketfile */
-	"Listen for the specified time (in seconds).",/* time */
-	"Print version information.",		/* version */
-	"Print this message.",			/* help */
+static void do_help(const struct cmdline_opt *, ...);
+static void do_version(const struct cmdline_opt *, ...);
+static struct cmdline_opt opts[] = {
+	{
+		"c", "count",
+		CMDLINE_OPT_INT, &max_events,
+		"<num>", "Set the maximum number of events"
+	},
+	{
+		"s", "socketfile",
+		CMDLINE_OPT_STRING, &socketfile,
+		"<file>", "Use the specified socket file"
+	},
+	{
+		"t", "time",
+		CMDLINE_OPT_INT, &time_limit,
+		"<secs>", "Listen for the specified time (in seconds)"
+	},
+	{
+		"v", "version",
+		CMDLINE_OPT_CALLBACK, do_version,
+		"", "Print version information and exit"
+	},
+	{
+		"h", "help",
+		CMDLINE_OPT_CALLBACK, do_help,
+		"", "Print this help message and exit"
+	},
+	CMDLINE_OPT_END_OF_LIST
 };
 
 static void
-usage(FILE *fp)
+usage(FILE *out)
 {
-	struct option *opt;
-	const char **hlp;
-	int max, size;
-
-	fprintf(fp, "Usage: %s [OPTIONS]\n", progname);
-	max = 0;
-	for (opt = opts; opt->name; opt++) {
-		size = strlen(opt->name);
-		if (size > max)
-			max = size;
+	const char *help_str;
+	fprintf(out, "Usage: %s [OPTIONS]\n", cmdline_progname);
+	fprintf(out, "\n");
+	while ((help_str = cmdline_help(opts))) {
+		fprintf(out, "  %s\n", help_str);
 	}
-	for (opt = opts, hlp = opts_help; opt->name; opt++, hlp++) {
-		fprintf(fp, "  -%c, --%s", opt->val, opt->name);
-		size = strlen(opt->name);
-		for (; size < max; size++)
-			fprintf(fp, " ");
-		fprintf(fp, "  %s\n", *hlp);
-	}
+	fprintf(out, "\n");
 }
 
 /*
  * Parse command line arguments
  */
 static int
-handle_cmdline(int *argc, char ***argv)
+handle_cmdline(int *argc, const char ***argv)
 {
-	for (;;) {
-		int i;
-		i = getopt_long(*argc, *argv, "c:s:t:vh", opts, NULL);
-		if (i == -1) {
-			break;
-		}
-		switch (i) {
-		case 'c':
-			if (!isdigit(optarg[0])) {
-				usage(stderr);
-				exit(EXIT_FAILURE);
-			}
-			max_events = atoi(optarg);
-			break;
-		case 's':
-			socketfile = optarg;
-			break;
-		case 't':
-			if (!isdigit(optarg[0])) {
-				usage(stderr);
-				exit(EXIT_FAILURE);
-			}
-			alarm(atoi(optarg));
-			break;
-		case 'v':
-			printf(PACKAGE "-" PRJ_VERSION "\n");
-			exit(EXIT_SUCCESS);
-		case 'h':
-			usage(stdout);
-			exit(EXIT_SUCCESS);
-		default:
-			usage(stderr);
-			exit(EXIT_FAILURE);
-			break;
-		}
+	/* Parse the command line. */
+	cmdline_parse(argc, argv, opts);
+	if (*argc != 1) {
+		fprintf(stderr,
+		        "Unknown command line argument: '%s'\n\n", (*argv)[1]);
+		usage(stderr);
+		exit(EXIT_FAILURE);
 	}
 
-	*argc -= optind;
-	*argv += optind;
+	/*
+	 * Post-process command line flags.
+	 */
+	if (max_events < 0) {
+		max_events = 0;
+	}
+	if (time_limit > 0) {
+		alarm(time_limit);
+	}
 
 	return 0;
+}
+
+static void
+do_help(const struct cmdline_opt *opt __attribute__((unused)), ...)
+{
+	usage(stdout);
+	exit(EXIT_SUCCESS);
+}
+
+static void
+do_version(const struct cmdline_opt *opt __attribute__((unused)), ...)
+{
+	printf(PACKAGE "-" PRJ_VERSION "\n");
+	exit(EXIT_SUCCESS);
 }
 
 #define MAX_BUFLEN	1024

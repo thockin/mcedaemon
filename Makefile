@@ -43,7 +43,7 @@ PROGS = $(SBIN_PROGS) $(BIN_PROGS) $(TEST_PROGS)
 mced_SRCS = mced.c rules.c ud_socket.c cmdline.c
 mced_OBJS = $(mced_SRCS:.c=.o)
 
-mce_listen_SRCS = mce_listen.c ud_socket.c
+mce_listen_SRCS = mce_listen.c ud_socket.c cmdline.c
 mce_listen_OBJS = $(mce_listen_SRCS:.c=.o)
 
 mce_decode_SRCS = mce_decode.c

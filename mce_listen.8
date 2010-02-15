@@ -7,8 +7,8 @@ mce_listen \- MCE event listener
 
 .SH DESCRIPTION
 \fBmced\fP is the sysem-wide MCE event catcher.  \fBmce_listen\fP is a
-simple shell-friendly tool which connects to mced and listens for events.
-When an event occurs, mce_listen will print it on stdout.
+simple shell-friendly tool which connects to \fBmced\fP and listens for
+events.  When an event occurs, \fBmce_listen\fP will print it on stdout.
 
 .SH OPTIONS
 .TP
@@ -18,11 +18,13 @@ events here will cause \fBmce_listen\fP to open the connection and
 immediately exit.  This is useful as a 'ping' of sorts.
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
-This option changes the name of the UNIX domain socket which \fBmced\fP opens.
-Default is \fI/var/run/mced.socket\fP.
+This option changes the name of the UNIX domain socket which
+\fBmce_listen\fP opens.  Default is \fI/var/run/mced.socket\fP.
 .TP
 .BI \-t "\fR, \fP" \--time " seconds"
-Listen for the specified time in seconds, before exiting.
+Listen for the specified time in seconds, before exiting.  Setting this to
+0 or less will cause \fBmce_listen\fP to listen with no timeout.  Default
+is no timeout.
 .TP
 .BI \-v "\fR, \fP" \--version
 Print version information and exit.

@@ -206,7 +206,7 @@ static struct cmdline_opt mced_opts[] = {
 	{
 		"h", "help",
 		CMDLINE_OPT_CALLBACK, do_help,
-		"", "Produce this help message and exit"
+		"", "Print this help message and exit"
 	},
 	CMDLINE_OPT_END_OF_LIST
 };
