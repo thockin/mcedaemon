@@ -16,6 +16,9 @@ PROFILE ?= 0			# boolean
 BUILD_MCE_DB ?= 0		# boolean (stale, needs testing)
 ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
 
+# include the generic rules
+include $(TOPDIR)/Makerules.mk
+
 # assign any flags variables
 # Use '+=' variable assignment so ENV variables can be used.
 
@@ -26,9 +29,6 @@ CFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
 ifneq "$(strip $(BUILD_MCE_DB))" "0"
 LDFLAGS += -ldb
 endif
-
-# include the generic rules
-include $(TOPDIR)/Makerules.mk
 
 INSTPREFIX =
 BINDIR = $(INSTPREFIX)/usr/bin
