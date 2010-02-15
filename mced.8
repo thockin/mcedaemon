@@ -84,8 +84,10 @@ This option changes the directory in which \fBmced\fP looks for rule
 configuration files.  Default is \fI/etc/mced\fP.
 .TP 12
 .BI \-C "\fR, \fP" \--clientmax " number"
-This option changes the maximum number of non-root socket connections which
-can be made to the \fBmced\fP socket.  Default is \fI128\fP.
+This option changes the maximum number of non-root socket connections
+which can be made to the \fBmced\fP socket.  Setting this to 0 or less
+will result in non-root clients being denied access completely. Default is
+\fI128\fP.
 .TP 12
 .BI \-d "\fR, \fP" \--debug
 This option increases the \fBmced\fP debug level by one.  If the debug level
@@ -121,7 +123,9 @@ milliseconds (0.1 seconds).
 This option sets the minimum time between overflow log messages.  These
 messages mean that there are more MCEs happening than the system can
 handle.  This option does not change the polling rate or handling behavior
-of \fBmced\fP, just the logging behavior. Default is \fI10\fP seconds.
+of \fBmced\fP, just the logging behavior. Setting this to 0 or less will
+disable rate limiting for these messages.  Using \-l (\--logevents) will
+override this option. (Default is \fI10\fP seconds.
 .TP
 .BI \-p "\fR, \fP" \--pidfile " filename"
 This option changes the name of the pidfile to which \fBmced\fP writes.
@@ -136,7 +140,7 @@ option on at all, even with a very high limit, can have a detrimental
 effect on the number of MCEs that can be handled in a given time period,
 mostly due to inherent jitter with very small sleeps.  \fBmced\fP tries to
 adjust based on real timings of the system, but there is only so much
-accuracy to be had.
+accuracy to be had.  Setting this to 0 or less will disable rate limiting.
 Default is no rate limit.
 .TP
 .BI \-R "\fR, \fP" \--retrydev

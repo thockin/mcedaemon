@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <getopt.h>
 #include <time.h>
 #include <sys/poll.h>
 #include <grp.h>
@@ -42,6 +41,7 @@
 #include <sys/ioctl.h>
 
 #include "mced.h"
+#include "cmdline.h"
 #if BUILD_MCE_DB
 #include "mcedb.h"
 #endif
@@ -66,198 +66,217 @@ struct mce_database *mced_db;
 
 /* statics */
 static const char *progname;
-static long bootnum = -1;
-static const char *confdir = MCED_CONFDIR;
-static const char *device = MCED_EVENTFILE;
-static long max_interval_ms = MCED_MAX_INTERVAL;
-static long min_interval_ms = MCED_MIN_INTERVAL;
-static long mce_rate_limit = -1;
-static const char *socketfile = MCED_SOCKETFILE;
-static int nosocket;
-static const char *socketgroup;
-static mode_t socketmode = MCED_SOCKETMODE;
-static int foreground;
-static const char *pidfile = MCED_PIDFILE;
-static int clientmax = MCED_CLIENTMAX;
-static int overflow_suppress_time = MCED_OVERFLOW_SUPPRESS_TIME;
+static cmdline_int bootnum = -1;
+static cmdline_int debug_level = 0;
+static cmdline_bool log_events = 0;
+static cmdline_string confdir = MCED_CONFDIR;
+static cmdline_string device = MCED_EVENTFILE;
+static cmdline_int max_interval_ms = MCED_MAX_INTERVAL;
+static cmdline_int min_interval_ms = MCED_MIN_INTERVAL;
+static cmdline_int mce_rate_limit = -1;
+static cmdline_string socketfile = MCED_SOCKETFILE;
+static cmdline_bool nosocket = 0;
+static cmdline_string socketgroup = NULL;
+static cmdline_mode_t socketmode = MCED_SOCKETMODE;
+static cmdline_bool foreground = 0;
+static cmdline_string pidfile = MCED_PIDFILE;
+static cmdline_int clientmax = MCED_CLIENTMAX;
+static cmdline_int overflow_suppress_time = MCED_OVERFLOW_SUPPRESS_TIME;
+static cmdline_bool retry_mcelog = 0;
 #if BUILD_MCE_DB
-static const char *dbdir = MCED_DBDIR;
+static cmdline_string dbdir = MCED_DBDIR;
 #endif
-/* This is only used if ENABLE_FAKE_DEV_MCELOG is non-zero */
-static int fake_dev_mcelog = 0;
-static int mcelog_poll_works;
-static int retry_mcelog = 0;
+static int mcelog_poll_works = 0;
 static int log_is_open = 0;
+static int fake_dev_mcelog = 0;
 
 /*
  * Helpers
  */
 
+static void do_help(const struct cmdline_opt *, ...);
+static void do_version(const struct cmdline_opt *, ...);
+static struct cmdline_opt mced_opts[] = {
+	#if BUILD_MCE_DB
+	{
+		"B", "dbdir",
+		CMDLINE_OPT_STRING, &dbdir,
+		"<dir>", "Set the database directory"
+	},
+	#endif  /* BUILD_MCE_DB */
+	{
+		"b", "bootnum",
+		CMDLINE_OPT_INT, &bootnum,
+		"<num>", "Set the current boot number"
+	},
+	{
+		"c", "confdir",
+		CMDLINE_OPT_STRING, &confdir,
+		"<dir>", "Set the configuration directory"
+	},
+	{
+		"C", "clientmax",
+		CMDLINE_OPT_INT, &clientmax,
+		"<num>", "Limit the number of non-root socket clients"
+	},
+	{
+		"d", "debug",
+		CMDLINE_OPT_COUNTER, &debug_level,
+		"", "Increase the debugging level (implies -f)"
+	},
+	{
+		"D", "device",
+		CMDLINE_OPT_STRING, &device,
+		"<file>", "Use the specified mcelog device"
+	},
+	{
+		"f", "foreground",
+		CMDLINE_OPT_BOOL, &foreground,
+		"", "Run in the foreground"
+	},
+	{
+		"g", "socketgroup",
+		CMDLINE_OPT_STRING, &socketgroup,
+		"<group>", "Set the group on the socket file"
+	},
+	{
+		"l", "logevents",
+		CMDLINE_OPT_BOOL, &log_events,
+		"", "Log each MCE and handlers"
+	},
+	{
+		"m", "socketmode",
+		CMDLINE_OPT_MODE_T, &socketmode,
+		"<mode>", "Set the permissions on the socket file"
+	},
+	{
+		"n", "mininterval",
+		CMDLINE_OPT_INT, &min_interval_ms,
+		"<num>", "Set the MCE polling min interval (in msecs)"
+	},
+	{
+		"o", "oflowsuppress",
+		CMDLINE_OPT_INT, &overflow_suppress_time,
+		"<num>", "Set the log period for overflows (in secs)"
+	},
+	{
+		"p", "pidfile",
+		CMDLINE_OPT_STRING, &pidfile,
+		"<file>", "Use the specified PID file"
+	},
+	{
+		"r", "ratelimit",
+		CMDLINE_OPT_INT, &mce_rate_limit,
+		"<num>", "Limit the number of MCEs handled per second"
+	},
+	{
+		"R", "retrydev",
+		CMDLINE_OPT_BOOL, &retry_mcelog,
+		"", "Retry the mcelog device if it fails to open"
+	},
+	{
+		"s", "socketfile",
+		CMDLINE_OPT_STRING, &socketfile,
+		"<file>", "Use the specified socket file"
+	},
+	{
+		"S", "nosocket",
+		CMDLINE_OPT_BOOL, &nosocket,
+		"", "Don't listen on a UNIX socket (overrides -s)"
+	},
+	{
+		"x", "maxinterval",
+		CMDLINE_OPT_INT, &max_interval_ms,
+		"<num>", "Set the MCE polling max interval (in msecs)"
+	},
+	{
+		"v", "version",
+		CMDLINE_OPT_CALLBACK, do_version,
+		"", "Print version information and exit"
+	},
+	{
+		"h", "help",
+		CMDLINE_OPT_CALLBACK, do_help,
+		"", "Produce this help message and exit"
+	},
+	CMDLINE_OPT_END_OF_LIST
+};
+
+/*
+ * Print usage info.
+ */
+static void
+usage(FILE *out)
+{
+	const char *help_str;
+	fprintf(out, "Usage: %s [OPTIONS]\n", cmdline_progname);
+	fprintf(out, "\n");
+	while ((help_str = cmdline_help(mced_opts))) {
+		fprintf(out, "  %s\n", help_str);
+	}
+	fprintf(out, "\n");
+}
+
 /*
  * Parse command line arguments.
  */
 static int
-handle_cmdline(int *argc, char ***argv)
+handle_cmdline(int *argc, const char ***argv)
 {
-	struct option opts[] = {
-#if BUILD_MCE_DB
-		{"dbdir", 1, 0, 'B'},
-#endif
-		{"bootnum", 1, 0, 'b'},
-		{"confdir", 1, 0, 'c'},
-		{"clientmax", 1, 0, 'C'},
-		{"debug", 0, 0, 'd'},
-		{"device", 1, 0, 'D'},
-		{"foreground", 0, 0, 'f'},
-		{"socketgroup", 1, 0, 'g'},
-		{"logevents", 0, 0, 'l'},
-		{"socketmode", 1, 0, 'm'},
-		{"mininterval", 1, 0, 'n'},
-		{"oflowsuppress", 1, 0, 'o'},
-		{"pidfile", 1, 0, 'p'},
-		{"ratelimit", 1, 0, 'r'},
-		{"retrydev", 0, 0, 'R'},
-		{"socketfile", 1, 0, 's'},
-		{"nosocket", 0, 0, 'S'},
-		{"maxinterval", 1, 0, 'x'},
-		{"version", 0, 0, 'v'},
-		{"help", 0, 0, 'h'},
-		{NULL, 0, 0, 0},
-	};
-	const char *opts_help[] = {
-#if BUILD_MCE_DB
-		"Set the database directory.",		/* dbdir */
-#endif
-		"Set the current boot number.",		/* bootnum */
-		"Set the configuration directory.",	/* confdir */
-		"Set the limit on non-root socket connections.",/* clientmax */
-		"Increase debugging level (implies -f).",/* debug */
-		"Use the specified mcelog device.",	/* device */
-		"Run in the foreground.",		/* foreground */
-		"Set the group on the socket file.",	/* socketgroup */
-		"Log each MCE and handlers.",		/* logevents */
-		"Set the permissions on the socket file.",/* socketmode */
-		"Set the MCE polling min interval (msecs).", /* mininterval */
-		"Set the log period for overflows (secs).", /* oflowsuppress */
-		"Use the specified PID file.",		/* pidfile */
-		"Limit the number of MCEs handled per second.",/* ratelimit */
-		"Retry the mcelog device if it fails to open.",/* retrydev */
-		"Use the specified socket file.",	/* socketfile */
-		"Do not listen on a UNIX socket (overrides -s).",/* nosocket */
-		"Set the MCE polling max interval (msecs).",/* maxinterval */
-		"Print version information.",		/* version */
-		"Print this message.",			/* help */
-	};
-	struct option *opt;
-	const char **hlp;
-	int max, size;
-
-	for (;;) {
-		int i;
-		i = getopt_long(*argc, *argv,
-#if BUILD_MCE_DB
-		    "B:"
-#endif
-		    "b:c:C:dD:fg:lm:n:o:p:r:Rs:Sx:vh", opts, NULL);
-		if (i == -1) {
-			break;
-		}
-		switch (i) {
-#if BUILD_MCE_DB
-		case 'B':
-			dbdir = optarg;
-			break;
-#endif
-		case 'b':
-			bootnum = strtol(optarg, NULL, 0);;
-			break;
-		case 'c':
-			confdir = optarg;
-			break;
-		case 'C':
-			clientmax = strtol(optarg, NULL, 0);
-			break;
-		case 'd':
-			foreground = 1;
-			mced_debug_level++;
-			break;
-		case 'D':
-			device = optarg;
-			break;
-		case 'f':
-			foreground = 1;
-			break;
-		case 'g':
-			socketgroup = optarg;
-			break;
-		case 'x':
-			max_interval_ms = strtol(optarg, NULL, 0);
-			if (max_interval_ms <= 0) {
-				max_interval_ms = -1;
-			}
-			break;
-		case 'n':
-			min_interval_ms = strtol(optarg, NULL, 0);
-			if (min_interval_ms <= 0) {
-				min_interval_ms = 0;
-			}
-			break;
-		case 'o':
-			overflow_suppress_time = strtol(optarg, NULL, 0);
-			break;
-		case 'l':
-			mced_log_events = 1;
-			break;
-		case 'm':
-			socketmode = (mode_t)strtol(optarg, NULL, 8);
-			break;
-		case 'p':
-			pidfile = optarg;
-			break;
-		case 'r':
-			mce_rate_limit = strtol(optarg, NULL, 0);
-			break;
-		case 'R':
-			retry_mcelog = 1;
-			break;
-		case 's':
-			socketfile = optarg;
-			break;
-		case 'S':
-			nosocket = 1;
-			break;
-		case 'v':
-			printf(PACKAGE "-" PRJ_VERSION "\n");
-			exit(EXIT_SUCCESS);
-		case 'h':
-		default:
-			fprintf(stderr, "Usage: %s [OPTIONS]\n", progname);
-			max = 0;
-			for (opt = opts; opt->name; opt++) {
-				size = strlen(opt->name);
-				if (size > max)
-					max = size;
-			}
-			for (opt = opts, hlp = opts_help;
-			     opt->name;
-			     opt++, hlp++)
-			{
-				fprintf(stderr, "  -%c, --%s",
-					opt->val, opt->name);
-				size = strlen(opt->name);
-				for (; size < max; size++)
-					fprintf(stderr, " ");
-				fprintf(stderr, "  %s\n", *hlp);
-			}
-			exit(EXIT_FAILURE);
-			break;
-		}
+	/* Parse the command line. */
+	cmdline_parse(argc, argv, mced_opts);
+	if (*argc != 1) {
+		fprintf(stderr,
+		        "Unknown command line argument: '%s'\n\n", (*argv)[1]);
+		usage(stderr);
+		exit(EXIT_FAILURE);
 	}
 
-	*argc -= optind;
-	*argv += optind;
+	/*
+	 * Post-process command line flags.
+	 */
+	mced_debug_level = debug_level;
+	mced_log_events = log_events;
+	if (mced_debug_level > 0) {
+		foreground = 1;
+	}
+	if (max_interval_ms <= 0) {
+		max_interval_ms = -1;
+	}
+	if (min_interval_ms < 0) {
+		min_interval_ms = 0;
+	}
+	if (clientmax < 0) {
+		clientmax = 0;
+	}
+	if (overflow_suppress_time < 0) {
+		overflow_suppress_time = 0;
+	}
+	if (mce_rate_limit <= 0) {
+		mce_rate_limit = -1;
+	}
 
 	return 0;
+}
+
+/*
+ * Helper function for handling '-h' cmdlines.
+ */
+static void
+do_help(const struct cmdline_opt *opt __attribute__((unused)), ...)
+{
+	usage(stdout);
+	exit(EXIT_SUCCESS);
+}
+
+/*
+ * Helper function for handling '-v' cmdlines.
+ */
+static void
+do_version(const struct cmdline_opt *opt __attribute__((unused)), ...)
+{
+	printf(PACKAGE "-" PRJ_VERSION "\n");
+	exit(EXIT_SUCCESS);
 }
 
 static void
@@ -575,7 +594,7 @@ do_one_mce(struct kernel_mce *kmce)
 		mced_log(LOG_WARNING, "MCE overflow detected by hardware\n");
 		if (!mced_log_events && overflow_suppress_time) {
 			mced_log(LOG_WARNING,
-			    "(previous message suppressed for %d seconds)",
+			    "(previous message suppressed for %lld seconds)",
 			    overflow_suppress_time);
 		}
 	}
@@ -740,7 +759,7 @@ do_pending_mces(int mce_fd)
 				 && overflow_suppress_time) {
 					mced_log(LOG_WARNING,
 					    "(previous message suppressed "
-					    "for %d seconds)",
+					    "for %lld seconds)",
 					    overflow_suppress_time);
 				}
 			}
@@ -899,7 +918,7 @@ get_mcelog_fd(void)
 		}
 		if (fd < 0 && !printed_msg) {
 			printed_msg = 1;
-			mced_log(LOG_INFO, "Will retry in %ld ms\n",
+			mced_log(LOG_INFO, "Will retry in %lld ms\n",
 			         max_interval_ms);
 		}
 	}
@@ -907,14 +926,14 @@ get_mcelog_fd(void)
 }
 
 int
-main(int argc, char **argv)
+main(int argc, const char *argv[])
 {
 	int mcelog_fd;
 	int sock_fd = -1; /* init to avoid a compiler warning */
 	int interval_ms;
 
 	/* learn who we really are */
-	progname = (const char *)strrchr(argv[0], '/');
+	progname = strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];
 
 	/* handle the commandline  */
@@ -973,6 +992,10 @@ main(int argc, char **argv)
 	}
 
 	/* main loop */
+	if (mce_rate_limit > 0) {
+		mced_log(LOG_INFO, "rate limiting MCEs to %lld per second\n",
+		         mce_rate_limit);
+	}
 	mced_log(LOG_INFO, "waiting for events: per-event logging is %s\n",
 	         mced_log_events ? "on" : "off");
 	interval_ms = max_interval_ms;
