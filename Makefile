@@ -13,7 +13,7 @@ PRJ_VERSION = 1.9.9
 DEBUG ?= 0			# boolean
 STATIC ?= 0			# option: 0=no, 1=yes, 2=partial
 PROFILE ?= 0			# boolean
-BUILD_MCE_DB ?= 0		# boolean (stale, needs testing)
+BUILD_MCE_DB ?= 0		# boolean (currently not checked in)
 ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
 
 # include the generic rules
