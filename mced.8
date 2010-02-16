@@ -34,27 +34,27 @@ include shell-special characters, and they will be preserved.  The only special
 characters in an action value are "%" escaped.  The following escapes will
 be processed:
 .br
-	%c	- CPU number
+	%c	- CPU number (unsigned)
 .br
-	%b	- MCE bank
+	%b	- MCE bank (unsigned)
 .br
-	%s	- MCi status
+	%s	- MCi status (unsigned)
 .br
-	%a	- MCi address
+	%a	- MCi address (unsigned)
 .br
-	%m	- MCi misc
+	%m	- MCi misc (unsigned)
 .br
-	%g	- MCG status
+	%g	- MCG status (unsigned)
 .br
-	%t	- MCED timestamp (usecs since epoch)
+	%t	- MCED timestamp (usecs since epoch, unsigned)
 .br
-	%T	- CPU timestamp counter
+	%T	- CPU timestamp counter (unsigned)
 .br
-	%C	- CPU code segment regsiter
+	%C	- CPU code segment register (unsigned)
 .br
-	%I	- CPU instruction pointer
+	%I	- CPU instruction pointer (unsigned)
 .br
-	%B	- boot number
+	%B	- boot number (signed)
 
 The command string may contain spaces, so the commandline must take care
 to use quotes if it wants a tokens with spaces.  The string "%%" will be
