@@ -708,11 +708,11 @@ parse_cmd(const char *cmd, struct mce *mce)
 			if (*p == 'c') {
 				/* cpu */
 				used += snprintf(buf+used, size,
-					"%u", mce->cpu);
+					"%u", (unsigned)mce->cpu);
 			} else if (*p == 'b') {
 				/* bank */
 				used += snprintf(buf+used, size,
-					"%u", mce->bank);
+					"%u", (unsigned)mce->bank);
 			} else if (*p == 's') {
 				/* status */
 				used += snprintf(buf+used, size,
@@ -755,7 +755,7 @@ parse_cmd(const char *cmd, struct mce *mce)
 			} else if (*p == 'B') {
 				/* bootnum */
 				used += snprintf(buf+used, size,
-					"%d", mce->boot);
+					"%d", (int)mce->boot);
 			} else {
 				/* just assume a literal */
 				buf[used++] = *p;
