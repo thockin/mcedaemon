@@ -8,9 +8,9 @@ mced \- Machine Check Event daemon
 .SH DESCRIPTION
 \fBmced\fP is designed to notify user-space programs of Machine Check events.
 \fBmced\fP should be started during the system boot, and will run as a
-background process, by default.  It will open the kernel MCE log device
+background process by default.  It will open the kernel MCE log device
 (\fI/dev/mcelog\fP by default) and wait for events.  When an event is
-received, \fBmced\fP will execute its list of handler rules.
+received \fBmced\fP will execute its list of handler rules.
 .PP
 \fIRules\fP are defined by simple configuration files.  \fBmced\fP
 will look in a configuration directory (\fI/etc/mced/\fP by default),
@@ -46,7 +46,7 @@ be processed:
 .br
 	%g	- MCG status (unsigned)
 .br
-	%t	- MCED timestamp (usecs since epoch, unsigned)
+	%t	- timestamp (usecs since epoch, unsigned)
 .br
 	%T	- CPU timestamp counter (unsigned)
 .br
@@ -56,9 +56,16 @@ be processed:
 .br
 	%B	- boot number (signed)
 
+The "%t" expansion reflects the best-available timestamp.  Older kernels
+(pre 2.6.31) do not provide a wall-time timestamp, so \fBmced\fP uses the
+time, from gettimeofday(2), at which the MCE was delivered to it.  Kernel
+2.6.31 added a time_t field to its MCE structure, which is limited to
+seconds resolution.  If the kernel's time field is 0, \fBmced\fP will fall
+back on gettimeofday(2).
+
 The command string may contain spaces, so the commandline must take care
 to use quotes if it wants a tokens with spaces.  The string "%%" will be
-replaced by a literal "%".  All other "%" escapes are reserved, and will
+replaced by a literal "%".  All other "%" expansions are reserved, and will
 cause a rule to not load.
 .PP
 To force \fBmced\fP to reload the rule configuration, send it a SIGHUP.
@@ -89,7 +96,10 @@ and which can be passed to handlers.  Default is -1.
 .TP 12
 .BI \-c "\fR, \fP" \--confdir " directory"
 This option changes the directory in which \fBmced\fP looks for rule
-configuration files.  Default is \fI/etc/mced\fP.
+configuration files.  When running as a daemon, \fBmced\fP will change
+directories to the root of the filesystem, which means this argument
+must be an absolute path (/path/to/conf/dir), rather than a relative path
+(conf/dir or ./conf/dir).  Default is \fI/etc/mced\fP.
 .TP 12
 .BI \-C "\fR, \fP" \--clientmax " number"
 This option changes the maximum number of non-root socket connections
@@ -201,7 +211,7 @@ Show help and exit.
 .SH BUGS
 There are no known bugs.  To file bug reports, see \fBAUTHORS\fP below.
 .SH SEE ALSO
-sh(1), socket(2), connect(2)
+sh(1), socket(2), connect(2), gettimeofday(2)
 .SH AUTHORS
 Tim Hockin <thockin@hockin.org>
 

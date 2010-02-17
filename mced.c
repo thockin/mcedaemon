@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -39,6 +40,7 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include <sys/ioctl.h>
+#include <sys/utsname.h>
 
 #include "mced.h"
 #include "cmdline.h"
@@ -57,7 +59,7 @@ int mced_log_events;
 int mced_non_root_clients;
 
 /* the size of a kernel MCE record in bytes */
-int mced_kernel_record_len;
+size_t mced_kernel_record_len;
 
 /* whether we force legacy socket output or not */
 int mced_legacy_socket;
@@ -93,6 +95,11 @@ static cmdline_string dbdir = MCED_DBDIR;
 static int mcelog_poll_works = 0;
 static int log_is_open = 0;
 static int fake_dev_mcelog = 0;
+static enum {
+	KERNEL_MCE_UNKNOWN = 0,
+	KERNEL_MCE_V1,   /* the historical 'struct mce' layout */
+	KERNEL_MCE_V2,   /* 2.6.31 made 'struct mce' changes */
+} kernel_mce_version;
 
 /*
  * Helpers
@@ -516,8 +523,9 @@ static void
 kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 {
 	struct timeval tv;
-
 	gettimeofday(&tv, NULL);
+
+	/* common fields for all versions of 'struct kernel_mce' */
 	mce->boot = bootnum;
 	mce->bank = kmce->bank;
 	mce->status = kmce->status;
@@ -525,10 +533,26 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	mce->misc = kmce->misc;
 	mce->gstatus = kmce->mcgstatus;
 	mce->tsc = kmce->tsc;
-	mce->time = (tv.tv_sec * 1000000) + tv.tv_usec;
-	mce->cpu = kmce->cpu;
 	mce->cs = kmce->cs;
 	mce->ip = kmce->rip;
+
+	if (kernel_mce_version == KERNEL_MCE_V1) {
+		mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
+		mce->cpu = kmce->cpu;
+	} else if (kernel_mce_version == KERNEL_MCE_V2) {
+		if (kmce->time != 0) {
+			mce->time = kmce->time * 1000000ULL;
+		} else {
+			mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
+		}
+		mce->cpu = kmce->extcpu;
+	} else {
+		/* this should never happen */
+		mced_log(LOG_EMERG,
+		         "FATAL: kernel_mce_version (%d) is unknown\n",
+		         kernel_mce_version);
+		clean_exit_with_status(EXIT_FAILURE);
+	}
 }
 
 /* this is used in a few places to throttle messages */
@@ -733,11 +757,11 @@ do_pending_mces(int mce_fd)
 	/* check for MCEs */
 	loglen = get_loglen(mce_fd);
 	if (loglen > 0) {
-		struct kernel_mce kmce[loglen];
+		uint8_t buf[mced_kernel_record_len*loglen];
 		int n;
 
 		/* read all of the MCE data */
-		n = read(mce_fd, kmce, mced_kernel_record_len*loglen);
+		n = read(mce_fd, buf, mced_kernel_record_len*loglen);
 		if (n < 0) {
 			if (fake_dev_mcelog && errno == EAGAIN) {
 				return 0;
@@ -781,8 +805,14 @@ do_pending_mces(int mce_fd)
 
 			/* handle all the new MCEs */
 			for (i = 0; i < nmces; i++) {
+				struct kernel_mce kmce;
 				rate_limit_mces();
-				do_one_mce(&kmce[i]);
+				/* The assumption is that newer versions of
+				 * 'struct kernel_mce' are guaranteed to be
+				 * supersets of older versions. */
+				memcpy(&kmce, &buf[i*mced_kernel_record_len],
+				       mced_kernel_record_len);
+				do_one_mce(&kmce);
 			}
 		}
 	}
@@ -843,24 +873,96 @@ check_mcelog_poll(int mce_fd)
 }
 
 static int
+get_kernel_version(unsigned *vmajor, unsigned *vminor, unsigned *vmicro)
+{
+	struct utsname u;
+
+	int r = uname(&u);
+	if (r < 0) {
+		return r;
+	}
+
+	r = sscanf(u.release, "%u.%u.%u", vmajor, vminor, vmicro);
+	if (r != 3) {
+		errno = EBADMSG;
+		return -1;
+	}
+	mced_debug(1, "DBG: found kernel %u.%u.%u\n",
+	           *vmajor, *vminor, *vmicro);
+	return 0;
+}
+
+static int
 init_kernel_mce_interface(int mce_fd)
 {
-	if (!fake_dev_mcelog
-	 && ioctl(mce_fd, MCE_GET_RECORD_LEN, &mced_kernel_record_len) < 0) {
+	if (fake_dev_mcelog) {
+		mced_kernel_record_len = sizeof(struct kernel_mce);
+		kernel_mce_version = KERNEL_MCE_V1;
+	} else {
+		int r;
+
+		/* Adjust for kernel versions. */
+		unsigned vmajor, vminor, vmicro;
+		r = get_kernel_version(&vmajor, &vminor, &vmicro);
+		if (r < 0) {
+			static int printed_msg;
+			if (!printed_msg) {
+				printed_msg = 1;
+				mced_perror(LOG_ERR,
+				            "ERR: can't get kernel version\n");
+			}
+			return -1;
+		}
+
+		/* assume the historical kernel layout */
+		kernel_mce_version = KERNEL_MCE_V1;
+
+		/* there were layout changes in 2.6.31 */
+		if ((vmajor > 2)
+		 || (vmajor == 2 && vminor > 6)
+		 || (vmajor == 2 && vminor == 6 && vmicro >= 31)) {
+			kernel_mce_version = KERNEL_MCE_V2;
+		}
+
+		/* Figure out the kernel's 'struct mce' size. */
+		r = ioctl(mce_fd, MCE_GET_RECORD_LEN, &mced_kernel_record_len);
+		if (r < 0) {
+			static int printed_msg;
+			if (!printed_msg) {
+				printed_msg = 1;
+				mced_perror(LOG_ERR,
+				            "ERR: can't get MCE record size\n");
+			}
+			return -1;
+		}
+	}
+
+	/*
+	 * Sanity check the results.
+	 */
+
+	/* This should not happen. */
+	if (kernel_mce_version == KERNEL_MCE_UNKNOWN) {
 		static int printed_msg;
 		if (!printed_msg) {
 			printed_msg = 1;
-			mced_perror(LOG_ERR, "ERR: can't get MCE record size");
+			mced_log(LOG_ERR,
+			         "ERR: kernel MCE version is unknown\n");
 		}
 		return -1;
-	} else if (fake_dev_mcelog) {
-		mced_kernel_record_len = sizeof(struct kernel_mce);
 	}
-	if (mced_kernel_record_len != sizeof(struct kernel_mce)) {
+
+	/*
+	 * If the kernel grew 'struct mce' we will catch it here.  If they
+	 * simply changed the meaning of fields (hopefully only reserved
+	 * fields), then we will not catch it.  Let's hope they don't do
+	 * this.
+	 */
+	if (mced_kernel_record_len > sizeof(struct kernel_mce)) {
 		static int printed_msg;
 		if (!printed_msg) {
 			printed_msg = 1;
-			mced_log(LOG_ERR, "ERR: kernel MCE record size (%d) "
+			mced_log(LOG_ERR, "ERR: kernel MCE record size (%zd) "
 			         "is unsupported\n", mced_kernel_record_len);
 		}
 		return -1;

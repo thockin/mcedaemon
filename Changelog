@@ -1,4 +1,7 @@
 %changelog
+* Wed Jan 17 2010  Tim Hockin <thockin@google.com>
+  - Support linux-2.6.31's new larger struct mce. [mced.c, mced.h, mced.8]
+
 * Mon Jan 15 2010  Tim Hockin <thockin@google.com>
   - Fix numerous bugs and typos in man page. [mced.8]
   - Change socket output to a new "%x=value" format.  It's more extensible.

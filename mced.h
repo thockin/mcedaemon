@@ -43,21 +43,47 @@
 
 #define PACKAGE				"mced"
 
-/* this structure has to match the kernel's struct mce */
+/* this comes from Linux's asm/processor.h on x86 */
+enum cpu_vendor {
+	VENDOR_INTEL     = 0,
+	VENDOR_CYRIX     = 1,
+	VENDOR_AMD       = 2,
+	VENDOR_UMC       = 3,
+	VENDOR_CENTAUR   = 5,
+	VENDOR_TRANSMETA = 7,
+	VENDOR_NSC       = 8,
+};
+
+/*
+ * The kernel's notion of 'struct mce'.
+ *
+ * Because mced runs against multiple kernel versions, we need to keep
+ * track of what this structure looks like for each kernel.  If mced
+ * detects a structure size that it doesn't know about, it will refuse to
+ * run.  The assumption here is that the Linux kernel will guarantee that
+ * newer versions of 'struct mce' are strict supersets of older versions.
+ */
+
 struct kernel_mce {
 	uint64_t status;	/* MCi_STATUS */
 	uint64_t misc;		/* MCi_MISC */
 	uint64_t addr;		/* MCi_MISC */
 	uint64_t mcgstatus;	/* MCG_STATUS */
 	uint64_t rip;		/* instruction pointer */
-	uint64_t tsc;		/* time stamp counter */
-	uint64_t res1;		/* reserved */
-	uint64_t res2;		/* reserved */
+	uint64_t tsc;		/* timestamp counter */
+	uint64_t time;		/* timestamp (secs since epoch) (2.6.31+) */
+	uint8_t  cpuvendor;	/* cpu vendor (enum cpu_vendor) (2.6.31+) */
+	uint8_t  res1;		/* reserved */
+	uint16_t res2;		/* reserved */
+	uint32_t cpuid;		/* CPUID 1.EAX (2.6.31+) */
 	uint8_t  cs;		/* code segment */
 	uint8_t  bank;		/* machine check bank */
-	uint8_t  cpu;		/* cpu that raised the error */
+	uint8_t  cpu;		/* excepting cpu (deprecated 2.6.31+) */
 	uint8_t  finished;	/* entry is valid */
-	uint32_t pad;
+	uint32_t extcpu;	/* excepting cpu (2.6.31+) */
+	uint32_t socketid;	/* cpu socket (2.6.31+) */
+	uint32_t apicid;	/* cpu initial APIC ID (2.6.31+) */
+	uint64_t mcgcap;	/* MCGCAP (2.6.31+) */
 } __attribute__ ((packed));
 
 /* ioctl() calls for /dev/mcelog */
@@ -69,6 +95,7 @@ struct kernel_mce {
 #define MCE_FLAG_OVERFLOW    (1ULL << 0)
 
 /* this is our notion of an MCE */
+//TODO(thockin): update for 2.6.31+ new fields
 struct mce {
 	uint64_t status;	/* MCi_STATUS */
 	uint64_t address;	/* MCi_ADDR */
@@ -78,8 +105,8 @@ struct mce {
 	uint64_t time;		/* MCED timestamp (usecs since epoch) */
 	uint64_t ip;		/* CPU instruction pointer */
 	int32_t  boot;		/* boot number (-1 for unknown) */
+	uint32_t cpu;		/* excepting CPU */
 	uint8_t  cs;		/* CPU code segment */
-	uint8_t  cpu;		/* excepting CPU */
 	uint8_t  bank;		/* MC bank */
 } __attribute__ ((packed));
 #define MCE_STRUCT_VER	1
@@ -99,7 +126,7 @@ struct mce {
 extern int mced_debug_level;
 extern int mced_log_events;
 extern int mced_non_root_clients;
-extern int mced_kernel_record_len;
+extern size_t mced_kernel_record_len;
 extern int mced_legacy_socket;
 extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_debug(int min_dbg_lvl, const char *fmt, ...) PRINTF_ARGS(2, 3);
