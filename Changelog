@@ -2,10 +2,10 @@
 * Sun Feb 21 2010  Tim Hockin <thockin@hockin.org>
   - Add support for NULL short or long options. [cmdline.c]
 
-* Wed Jan 17 2010  Tim Hockin <thockin@google.com>
+* Wed Feb 17 2010  Tim Hockin <thockin@google.com>
   - Support linux-2.6.31's new larger struct mce. [mced.c, mced.h, mced.8]
 
-* Mon Jan 15 2010  Tim Hockin <thockin@google.com>
+* Mon Feb 15 2010  Tim Hockin <thockin@google.com>
   - Fix numerous bugs and typos in man page. [mced.8]
   - Change socket output to a new "%x=value" format.  It's more extensible.
     Document it better and deprecate the old style. [mced.8, rules.c]
@@ -14,13 +14,13 @@
   - Prep to make this be version 2.0.0. [Makefile]
   - Convert mce_list to use cmdline.h. [mce_listen.c, mce_listen.8, Makefile]
 
-* Sun Jan 14 2010  Tim Hockin <thockin@google.com>
+* Sun Feb 14 2010  Tim Hockin <thockin@google.com>
   - Use my own cmdline library, rather than getopt.  It's less fragile and
     less likely to get screwed up. [mced.c, mced.8, cmdline.c, cmdline.h,
     Makefile]
   - Change order of commandline flags in usage output. [mced.c]
 
-* Fri Jan 12 2010  Tim Hockin <thockin@google.com>
+* Fri Feb 12 2010  Tim Hockin <thockin@google.com>
   - Add -o (--oflowsuppress) flag to manage overflow log message
     suppression.  [mced.h, mced.c, mced.8]
 
