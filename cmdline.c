@@ -189,8 +189,10 @@ cmdline_help(const struct cmdline_opt *opts)
 	/* if the next opt is valid, build a string */
 	opt = &opts[saved_index];
 	if (opt->type != CMDLINE_OPT_EOL) {
-		snprintf(buf, sizeof(buf), "-%-*s --%-*s%s%-*s    %s",
+		snprintf(buf, sizeof(buf), "%s%-*s %s%-*s%s%-*s    %s",
+		        opt->short_name ? "-" : " ",
 		        (int)maxlen1, opt->short_name ? opt->short_name : "",
+		        opt->long_name ? "--" : "  ",
 		        (int)maxlen2, opt->long_name ? opt->long_name : "",
 		        (maxlen3 > 0) ? " " : "",
 		        (int)maxlen3, opt->arg_name ? opt->arg_name : "",

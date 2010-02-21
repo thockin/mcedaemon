@@ -1,4 +1,7 @@
 %changelog
+* Sun Feb 21 2010  Tim Hockin <thockin@hockin.org>
+  - Add support for NULL short or long options. [cmdline.c]
+
 * Wed Jan 17 2010  Tim Hockin <thockin@google.com>
   - Support linux-2.6.31's new larger struct mce. [mced.c, mced.h, mced.8]
 
