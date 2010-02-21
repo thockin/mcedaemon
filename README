@@ -19,5 +19,10 @@ Notes:
   get sent:
   	http://groups.google.com/group/mced-devel
 
+* mced supports sending events over D-Bus.  See the mced man page for
+  details or the mce_listen code for specifics on how to receive and
+  decode these events.  Building with D-Bus support requires development
+  packages for glib, gobject, gtype, pcre, dbus and dbus-glib.
+
 * If there is something you need out of mced, or if something is not
   working right, please contact me - thockin@hockin.org.

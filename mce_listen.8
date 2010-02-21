@@ -26,6 +26,14 @@ Listen for the specified time in seconds, before exiting.  Setting this to
 0 or less will cause \fBmce_listen\fP to listen with no timeout.  Default
 is no timeout.
 .TP
+.BI \--dbus
+Listen for events on D-Bus rather than the UNIX socket.  Default is to use
+the UNIX socket.
+.TP
+.BI \--dbus-session-bus
+Listen for D-Bus signals on the session bus, rather than the system bus.
+Default is the system bus.
+.TP
 .BI \-v "\fR, \fP" \--version
 Print version information and exit.
 .TP

@@ -76,13 +76,27 @@ may connect to this socket.  Once connected, \fBmced\fP will send the text of
 all MCE events to the client.  Each event is sent on a single line,
 terminated by a newline ('\\n') character.  The data is formatted as
 "%c=cpu %b=bank %s=mci_status %a=mci_address %m=mci_misc %g=mcg_status
-%t=timestamp %B=bootnum\\n").  Example:
+ %t=timestamp %B=bootnum\\n").  Each value is named by its corresponding
+"%" expansion, and ordering is not significant. Example:
 .br
 	%c=0 %b=4 %s=0x12345678 %a=0xabcdef %m=0x00000000 %g=0x00000000
 	%t=8675309 %B=42
 .br
 \fBmced\fP will not close the client socket except in the case of a SIGHUP
 or \fBmced\fP exiting.
+.PP
+If compiled with the ENABLE_DBUS flag, \fBmced\fP will also broadcast MCE
+events over D-Bus. Clients that wish to receive MCEs over DBUS should
+connect to the \fIorg.mcedaemon.MachineCheckDaemon\fP service, the
+\fI/org/mcedaemon/MachineCheckNotifier\fP object path and the
+\fIorg.mcedaemon.MachineCheckNotifier\fP interface.  Events are delivered
+via the \fImachine_check\fP signal with a data payload of type
+\fIa{sv}\fP.  The data payload is a hash of strings to variants which
+contains the same information as the normal UNIX socket, described above.
+The \--no-dbus flag will disable D-Bus completely.  By default \fBmced\fP
+will send its signals on the DBUS_BUS_SYSTEM bus, but the
+\--dbus-session-bus flag will force it to use the DBUS_BUS_SESSION bus
+instead.
 .PP
 \fBmced\fP will log all of its activities, as well as the stdout and
 stderr of any actions (depending on the \-l flag) to syslog.
@@ -191,6 +205,15 @@ Whenever an MCE is not found (and the polling interval has expired), the
 polling interval will be increased, with an upper bound of the \-x
 (\--maxinterval) option.  To disable polling completely, set this option
 to 0.
+.TP
+.BI \--no-dbus
+Disable the sending of MCEs over D-Bus.  When compiled with ENABLE_DBUS,
+\fBmced\fP will send D-Bus signals by default, unless this flag is
+specified.
+.TP
+.BI \--dbus-session-bus
+Send D-Bus signals on the session bus, rather than the system bus.
+Default is the system bus.
 .TP
 .BI \-v "\fR, \fP" \--version
 Print version information and exit.

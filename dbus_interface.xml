@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE node PUBLIC
+  "-//freedesktop//DTD D-Bus Object Introspection 1.0//EN"
+  "http://standards.freedesktop.org/dbus/1.0/introspect.dtd">
+<!-- This defines the D-Bus interface to the Machien Check Daemon -->
+<node>
+    <interface name="org.mcedaemon.MachineCheckNotifier">
+        <signal name="machine_check">
+            <arg type="a{sv}" name="mce_data" direction="out"/>
+        </signal>
+    </interface>
+</node>

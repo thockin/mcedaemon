@@ -13,7 +13,8 @@ PRJ_VERSION = 1.9.9
 DEBUG ?= 0			# boolean
 STATIC ?= 0			# option: 0=no, 1=yes, 2=partial
 PROFILE ?= 0			# boolean
-BUILD_MCE_DB ?= 0		# boolean (currently not checked in)
+ENABLE_MCEDB ?= 0		# boolean (currently not checked in)
+ENABLE_DBUS ?= 0		# boolean
 ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
 
 # include the generic rules
@@ -23,11 +24,16 @@ include $(TOPDIR)/Makerules.mk
 # Use '+=' variable assignment so ENV variables can be used.
 
 DEFS += -D_GNU_SOURCE
-CWARNS += -Wundef -Wshadow
-CFLAGS += -DBUILD_MCE_DB=$(BUILD_MCE_DB)
+CWARNS += -Wundef -Wshadow -Wno-strict-aliasing
+CFLAGS += -DENABLE_MCEDB=$(ENABLE_MCEDB)
+CFLAGS += -DENABLE_DBUS=$(ENABLE_DBUS)
 CFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
-ifneq "$(strip $(BUILD_MCE_DB))" "0"
-LDFLAGS += -ldb
+ifneq "$(strip $(ENABLE_MCEDB))" "0"
+LIBS += -ldb
+endif
+ifneq "$(strip $(ENABLE_DBUS))" "0"
+CFLAGS += $(shell pkg-config --cflags dbus-1 dbus-glib-1)
+LIBS += $(shell pkg-config --libs dbus-1 dbus-glib-1) -lpcre
 endif
 
 INSTPREFIX =
@@ -41,9 +47,17 @@ TEST_PROGS = mcelog_faker
 PROGS = $(SBIN_PROGS) $(BIN_PROGS) $(TEST_PROGS)
 
 mced_SRCS = mced.c rules.c ud_socket.c cmdline.c
+ifneq "$(strip $(ENABLE_DBUS))" "0"
+mced_SRCS += dbus.c dbus_asv.c
+mced_DEPS += auto.dbus_server.h
+endif
 mced_OBJS = $(mced_SRCS:.c=.o)
 
 mce_listen_SRCS = mce_listen.c ud_socket.c cmdline.c
+ifneq "$(strip $(ENABLE_DBUS))" "0"
+mce_listen_SRCS += dbus_asv.c
+mce_listen_DEPS += auto.dbus_client.h
+endif
 mce_listen_OBJS = $(mce_listen_SRCS:.c=.o)
 
 mce_decode_SRCS = mce_decode.c
@@ -61,14 +75,26 @@ MAN8GZ = $(MAN8:.8=.8.gz)
 
 all: $(PROGS)
 
-mced: $(mced_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+mced: $(mced_DEPS) $(mced_OBJS)
+	$(CC) -o $@ $(mced_OBJS) $(LDFLAGS) $(LDLIBS)
 
-mce_listen: $(mce_listen_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+auto.dbus_client.h auto.dbus_server.h: dbus_interface.xml
+	dbus-binding-tool \
+	    --prefix=mced_gobject \
+	    --mode=glib-client \
+	    --output=$@ \
+	    $<
+	dbus-binding-tool \
+	    --prefix=mced_gobject \
+	    --mode=glib-server \
+	    --output=$@ \
+	    $<
+
+mce_listen: $(mce_listen_DEPS) $(mce_listen_OBJS)
+	$(CC) -o $@ $(mce_listen_OBJS) $(LDFLAGS) $(LDLIBS)
 
 mcelog_faker: $(mcelog_faker_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $(mcelog_faker_OBJS) $(LDFLAGS)
 
 man: $(MAN8)
 	for a in $^; do gzip -f -9 -c $$a > $$a.gz; done
@@ -92,7 +118,7 @@ dist:
 	rm -rf $(DISTTMP)/mced-$(PRJ_VERSION)
 
 clean:
-	$(RM) $(PROGS) $(MAN8GZ) *.o
+	$(RM) $(PROGS) $(MAN8GZ) *.o auto.*
 
 distclean:
 	$(RM) .depend

@@ -44,8 +44,11 @@
 
 #include "mced.h"
 #include "cmdline.h"
-#if BUILD_MCE_DB
+#if ENABLE_MCEDB
 #include "mcedb.h"
+#endif
+#if ENABLE_DBUS
+#include "dbus.h"
 #endif
 #include "ud_socket.h"
 
@@ -64,7 +67,7 @@ size_t mced_kernel_record_len;
 /* whether we force legacy socket output or not */
 int mced_legacy_socket;
 
-#if BUILD_MCE_DB
+#if ENABLE_MCEDB
 /* global database handle */
 struct mce_database *mced_db;
 #endif
@@ -89,8 +92,12 @@ static cmdline_string pidfile = MCED_PIDFILE;
 static cmdline_int clientmax = MCED_CLIENTMAX;
 static cmdline_int overflow_suppress_time = MCED_OVERFLOW_SUPPRESS_TIME;
 static cmdline_bool retry_mcelog = 0;
-#if BUILD_MCE_DB
+#if ENABLE_MCEDB
 static cmdline_string dbdir = MCED_DBDIR;
+#endif
+#if ENABLE_DBUS
+static cmdline_bool no_dbus = 0;
+static cmdline_bool use_session_dbus = 0;
 #endif
 static int mcelog_poll_works = 0;
 static int log_is_open = 0;
@@ -108,13 +115,13 @@ static enum {
 static void do_help(const struct cmdline_opt *, ...);
 static void do_version(const struct cmdline_opt *, ...);
 static struct cmdline_opt mced_opts[] = {
-	#if BUILD_MCE_DB
+	#if ENABLE_MCEDB
 	{
 		"B", "dbdir",
 		CMDLINE_OPT_STRING, &dbdir,
 		"<dir>", "Set the database directory"
 	},
-	#endif  /* BUILD_MCE_DB */
+	#endif  /* ENABLE_MCEDB */
 	{
 		"d", "debug",
 		CMDLINE_OPT_COUNTER, &debug_level,
@@ -205,6 +212,18 @@ static struct cmdline_opt mced_opts[] = {
 		CMDLINE_OPT_BOOL, &old_socket_style,
 		"", "Make socket output compatible with mced v1.x"
 	},
+	#if ENABLE_DBUS
+	{
+		NULL, "no-dbus",
+		CMDLINE_OPT_BOOL, &no_dbus,
+		"", "Don't send MCEs over D-Bus"
+	},
+	{
+		NULL, "dbus-session-bus",
+		CMDLINE_OPT_BOOL, &use_session_dbus,
+		"", "Use D-Bus session bus, instead of system bus"
+	},
+	#endif
 	{
 		"v", "version",
 		CMDLINE_OPT_CALLBACK, do_version,
@@ -409,9 +428,9 @@ static void
 clean_exit_with_status(int status)
 {
 	mced_cleanup_rules(1);
-#if BUILD_MCE_DB
+	#if ENABLE_MCEDB
 	mcedb_close(mced_db);
-#endif
+	#endif
 	unlink(pidfile);
 	mced_log(LOG_NOTICE, "exiting\n");
 	exit(status);
@@ -633,14 +652,14 @@ do_one_mce(struct kernel_mce *kmce)
 		}
 	}
 
-#if BUILD_MCE_DB
+	#if ENABLE_MCEDB
 	if (mcedb_append(mced_db, &mce) < 0) {
 		mced_log(LOG_ERR,
 		    "ERR: failed to append MCE to database - not good!!\n");
 	} else {
 		mced_debug(1, "DBG: logged MCE #%d\n", mcedb_end(mced_db)-1);
 	}
-#endif
+	#endif
 	if (mced_log_events) {
 		mced_log(LOG_INFO, "starting MCE handlers\n");
 	}
@@ -648,6 +667,12 @@ do_one_mce(struct kernel_mce *kmce)
 	if (mced_log_events) {
 		mced_log(LOG_INFO, "completed MCE handlers\n");
 	}
+	#if ENABLE_DBUS
+	if (!no_dbus) {
+		mced_debug(1, "DBG: sending dbus signal\n");
+		dbus_send_mce(&mce);
+	}
+	#endif
 	return 0;
 }
 
@@ -1075,14 +1100,25 @@ main(int argc, const char *argv[])
 	}
 	mced_log(LOG_NOTICE, "starting up\n");
 
+	#if ENABLE_MCEDB
 	/* open the database */
-#if BUILD_MCE_DB
 	mced_db = mcedb_open(dbdir);
 	if (!mced_db) {
 		mced_log(LOG_ERR, "aborting");
 		exit(EXIT_FAILURE);
 	}
-#endif
+	#endif
+
+	#if ENABLE_DBUS
+	if (!no_dbus) {
+		int which_bus = DBUS_BUS_SYSTEM;
+		if (use_session_dbus) {
+			which_bus = DBUS_BUS_SESSION;
+		}
+		/* enable D-Bus */
+		dbus_init(which_bus);
+	}
+	#endif
 
 	/* trap key signals */
 	signal(SIGHUP, reload_conf);
