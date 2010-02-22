@@ -120,7 +120,10 @@ static int
 handle_cmdline(int *argc, const char ***argv)
 {
 	/* Parse the command line. */
-	cmdline_parse(argc, argv, cmdline_opts);
+	if (cmdline_parse(argc, argv, cmdline_opts) != 0) {
+		usage(stderr);
+		exit(EXIT_FAILURE);
+	}
 	if (*argc != 1) {
 		fprintf(stderr,
 		        "Unknown command line argument: '%s'\n\n", (*argv)[1]);

@@ -45,6 +45,7 @@
 
 /* this comes from Linux's asm/processor.h on x86 */
 enum cpu_vendor {
+	VENDOR_UNKNOWN   = -1,
 	VENDOR_INTEL     = 0,
 	VENDOR_CYRIX     = 1,
 	VENDOR_AMD       = 2,
@@ -108,6 +109,7 @@ struct mce {
 	uint32_t cpu;		/* excepting CPU */
 	uint8_t  cs;		/* CPU code segment */
 	uint8_t  bank;		/* MC bank */
+	int8_t   vendor;	/* CPU vendor */
 } __attribute__ ((packed));
 #define MCE_STRUCT_VER	1
 

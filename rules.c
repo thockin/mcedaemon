@@ -612,9 +612,10 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         (unsigned long long)mce->time, mce->boot);
 	} else {
 		snprintf(buf, sizeof(buf)-1,
-		         "%%c=%d %%b=%d %%s=0x%016llx %%a=0x%016llx "
+		         "%%c=%d %%v=%d d%%b=%d %%s=0x%016llx %%a=0x%016llx "
 		         "%%m=0x%016llx %%g=0x%016llx %%t=0x%016llx %%B=%d\n",
-		         mce->cpu, mce->bank, (unsigned long long)mce->status,
+		         mce->cpu, mce->vendor, mce->bank,
+		         (unsigned long long)mce->status,
 		         (unsigned long long)mce->address,
 		         (unsigned long long)mce->misc,
 		         (unsigned long long)mce->gstatus,

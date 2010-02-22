@@ -259,7 +259,10 @@ static int
 handle_cmdline(int *argc, const char ***argv)
 {
 	/* Parse the command line. */
-	cmdline_parse(argc, argv, mced_opts);
+	if (cmdline_parse(argc, argv, mced_opts) != 0) {
+		usage(stderr);
+		exit(EXIT_FAILURE);
+	}
 	if (*argc != 1) {
 		fprintf(stderr,
 		        "Unknown command line argument: '%s'\n\n", (*argv)[1]);
@@ -558,6 +561,7 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	if (kernel_mce_version == KERNEL_MCE_V1) {
 		mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
 		mce->cpu = kmce->cpu;
+		mce->vendor = VENDOR_UNKNOWN;
 	} else if (kernel_mce_version == KERNEL_MCE_V2) {
 		if (kmce->time != 0) {
 			mce->time = kmce->time * 1000000ULL;
@@ -565,6 +569,7 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 			mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
 		}
 		mce->cpu = kmce->extcpu;
+		mce->vendor = kmce->cpuvendor;
 	} else {
 		/* this should never happen */
 		mced_log(LOG_EMERG,

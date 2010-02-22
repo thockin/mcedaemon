@@ -109,6 +109,7 @@ dbus_send_mce(struct mce *mce)
 	/* convert a 'struct mce' into a 'dbus_asv' */
 	dbus_asv *payload = dbus_asv_new(
 	    "%c", G_TYPE_UINT,   (uint32_t)mce->cpu,
+	    "%v", G_TYPE_INT,    (int32_t)mce->vendor,
 	    "%b", G_TYPE_UINT,   (uint32_t)mce->bank,
 	    "%s", G_TYPE_UINT64, (uint64_t)mce->status,
 	    "%a", G_TYPE_UINT64, (uint64_t)mce->address,
