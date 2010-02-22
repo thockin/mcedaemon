@@ -80,6 +80,7 @@ safe_streq(const char *lhs, const char *rhs)
 int
 cmdline_parse(int *argc, const char ***argv, const struct cmdline_opt *opts)
 {
+	int retval;
 	const char **new_argv;
 	int new_argc;
 	int found_dash_dash = 0;
@@ -137,19 +138,22 @@ cmdline_parse(int *argc, const char ***argv, const struct cmdline_opt *opts)
 			 || (ndashes == 2 && safe_streq(arg, opt->long_name))) {
 				/* found a known option */
 				found = 1;
-				found_opt(&opts[i], argc, argv);
+				retval = found_opt(&opts[i], argc, argv);
 				break;
 			}
 		}
 		if (!found) {
 			new_argv[new_argc++] = next_argv;
 		}
+		if (retval != 0) {
+			break;
+		}
 		(*argc)--; (*argv)++;
 	}
 
 	(*argc) = new_argc;
 	(*argv) = new_argv;
-	return 0;
+	return retval;
 }
 
 const char *
