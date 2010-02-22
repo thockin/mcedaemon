@@ -38,6 +38,8 @@ be processed:
 .br
 	%v	- CPU vendor (signed)
 .br
+	%A	- CPUID level 1, EAX (unsigned)
+.br
 	%b	- MCE bank (unsigned)
 .br
 	%s	- MCi status (unsigned)
@@ -65,7 +67,8 @@ time, from gettimeofday(2), at which the MCE was delivered to it.  Kernel
 seconds resolution.  If the kernel's time field is 0, \fBmced\fP will fall
 back on gettimeofday(2).
 .PP
-The "%v" expansion is an enumerated value, taken from the Linux kernel:
+The "%v" expansion is only supported on kernel 2.6.31 and higher.  It is
+an enumerated value, taken from the Linux kernel:
 .br
 	-1	= VENDOR_UNKNOWN
 .br
@@ -82,6 +85,9 @@ The "%v" expansion is an enumerated value, taken from the Linux kernel:
 	 7	= VENDOR_TRANSMETA
 .br
 	 8	= VENDOR_NSC
+.PP
+The "%A" expansion is only supported on kernel 2.6.31 and higher.  It
+will read 0 on unsupported kernels.
 .PP
 The command string may contain spaces, so the commandline must take care
 to use quotes if it wants a tokens with spaces.  The string "%%" will be

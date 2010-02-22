@@ -562,6 +562,7 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 		mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
 		mce->cpu = kmce->cpu;
 		mce->vendor = VENDOR_UNKNOWN;
+		mce->cpuid_eax = 0;
 	} else if (kernel_mce_version == KERNEL_MCE_V2) {
 		if (kmce->time != 0) {
 			mce->time = kmce->time * 1000000ULL;
@@ -570,6 +571,7 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 		}
 		mce->cpu = kmce->extcpu;
 		mce->vendor = kmce->cpuvendor;
+		mce->cpuid_eax = kmce->cpuid;
 	} else {
 		/* this should never happen */
 		mced_log(LOG_EMERG,
@@ -674,7 +676,6 @@ do_one_mce(struct kernel_mce *kmce)
 	}
 	#if ENABLE_DBUS
 	if (!no_dbus) {
-		mced_debug(1, "DBG: sending dbus signal\n");
 		dbus_send_mce(&mce);
 	}
 	#endif

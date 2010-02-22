@@ -612,9 +612,11 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         (unsigned long long)mce->time, mce->boot);
 	} else {
 		snprintf(buf, sizeof(buf)-1,
-		         "%%c=%d %%v=%d d%%b=%d %%s=0x%016llx %%a=0x%016llx "
-		         "%%m=0x%016llx %%g=0x%016llx %%t=0x%016llx %%B=%d\n",
-		         mce->cpu, mce->vendor, mce->bank,
+		         "%%c=%d %%v=%d %%A=0x%08lx %%b=%d %%s=0x%016llx "
+		         "%%a=0x%016llx %%m=0x%016llx %%g=0x%016llx "
+		         "%%t=0x%016llx %%B=%d\n",
+		         mce->cpu, mce->vendor, (unsigned long)mce->cpuid_eax,
+		         mce->bank,
 		         (unsigned long long)mce->status,
 		         (unsigned long long)mce->address,
 		         (unsigned long long)mce->misc,
@@ -678,6 +680,8 @@ safe_write(int fd, const char *buf, int len)
 /*
  * Valid expansions:
  * 	%c	- CPU
+ * 	%v	- CPU vendor
+ * 	%A	- CPUID 1 EAX
  * 	%b	- bank
  * 	%s	- status
  * 	%a	- address
@@ -709,54 +713,60 @@ parse_cmd(const char *cmd, struct mce *mce)
 			if (*p == 'c') {
 				/* cpu */
 				used += snprintf(buf+used, size,
-					"%u", (unsigned)mce->cpu);
+				    "%u", (unsigned)mce->cpu);
+			} else if (*p == 'v') {
+				/* vendor */
+				used += snprintf(buf+used, size,
+				    "%d", (int)mce->vendor);
+			} else if (*p == 'A') {
+				/* CPUID 1 EAX */
+				used += snprintf(buf+used, size,
+				    "0x%08lx",
+				    (unsigned long)mce->cpuid_eax);
 			} else if (*p == 'b') {
 				/* bank */
 				used += snprintf(buf+used, size,
-					"%u", (unsigned)mce->bank);
+				    "%u", (unsigned)mce->bank);
 			} else if (*p == 's') {
 				/* status */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->status);
+				    "0x%016llx",
+				    (unsigned long long)mce->status);
 			} else if (*p == 'a') {
 				/* address */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->address);
+				    "0x%016llx",
+				    (unsigned long long)mce->address);
 			} else if (*p == 'm') {
 				/* misc */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->misc);
+				    "0x%016llx",
+				    (unsigned long long)mce->misc);
 			} else if (*p == 'g') {
 				/* gstatus */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->gstatus);
+				    "0x%016llx",
+				    (unsigned long long)mce->gstatus);
 			} else if (*p == 't') {
 				/* time */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->time);
+				    "0x%016llx", (unsigned long long)mce->time);
 			} else if (*p == 'T') {
 				/* tsc */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->tsc);
+				    "0x%016llx", (unsigned long long)mce->tsc);
 			} else if (*p == 'C') {
 				/* cs */
 				used += snprintf(buf+used, size,
-					"0x%02x", mce->cs);
+				    "0x%02x", mce->cs);
 			} else if (*p == 'I') {
 				/* ip */
 				used += snprintf(buf+used, size,
-					"0x%016llx",
-					(unsigned long long)mce->ip);
+				    "0x%016llx", (unsigned long long)mce->ip);
 			} else if (*p == 'B') {
 				/* bootnum */
 				used += snprintf(buf+used, size,
-					"%d", (int)mce->boot);
+				    "%d", (int)mce->boot);
 			} else {
 				/* just assume a literal */
 				buf[used++] = *p;

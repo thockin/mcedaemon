@@ -107,6 +107,7 @@ struct mce {
 	uint64_t ip;		/* CPU instruction pointer */
 	int32_t  boot;		/* boot number (-1 for unknown) */
 	uint32_t cpu;		/* excepting CPU */
+	uint32_t cpuid_eax;	/* CPUID 1, EAX */
 	uint8_t  cs;		/* CPU code segment */
 	uint8_t  bank;		/* MC bank */
 	int8_t   vendor;	/* CPU vendor */

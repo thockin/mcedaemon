@@ -4,6 +4,7 @@
   - Add D-Bus support.  [mced.c, mced.8, mce_listen.c, mce_listen.8,
     dbus.c, dbus.h, dbus_asv.h, dbus_asv.c, dbus_interface.xml ]
   - Add CPU vendor as %v. [mced.c, mced.h, mced.8, rules.c, dbus.c]
+  - Add CPUID 1 EAX as %A. [mced.c, mced.h, mced.8, rules.c, dbus.c]
 
 * Wed Feb 17 2010  Tim Hockin <thockin@google.com>
   - Support linux-2.6.31's new larger struct mce. [mced.c, mced.h, mced.8]
