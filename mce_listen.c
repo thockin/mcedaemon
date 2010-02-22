@@ -53,8 +53,10 @@
 static cmdline_string socketfile = MCED_SOCKETFILE;
 static cmdline_int max_events = -1;
 static cmdline_int time_limit = -1;
+#if ENABLE_DBUS
 static cmdline_bool use_dbus = 0;
 static cmdline_bool use_session_dbus = 0;
+#endif
 
 static void do_help(const struct cmdline_opt *, ...);
 static void do_version(const struct cmdline_opt *, ...);
@@ -279,7 +281,7 @@ mce_handler(DBusGProxy *proxy __attribute__((unused)),
 		} else if (G_VALUE_HOLDS_UINT(value)) {
 			uint32_t val = dbus_asv_get_uint32(asv, key, &valid);
 			if (valid) {
-				printf("%s=%lu", key, (unsigned long)val);
+				printf("%s=0x%08lx", key, (unsigned long)val);
 			}
 		} else if (G_VALUE_HOLDS_INT64(value)) {
 			int64_t val = dbus_asv_get_int64(asv, key, &valid);
@@ -289,7 +291,8 @@ mce_handler(DBusGProxy *proxy __attribute__((unused)),
 		} else if (G_VALUE_HOLDS_UINT64(value)) {
 			uint64_t val = dbus_asv_get_uint64(asv, key, &valid);
 			if (valid) {
-				printf("%s=%llu", key, (unsigned long long)val);
+				printf("%s=0x%016llx", key,
+				       (unsigned long long)val);
 			}
 		}
 	}
