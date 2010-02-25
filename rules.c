@@ -605,10 +605,11 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		snprintf(buf, sizeof(buf)-1,
 		         "%d %d 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
 		         "0x%016llx %d\n",
-		         mce->cpu, mce->bank, (unsigned long long)mce->status,
-		         (unsigned long long)mce->address,
-		         (unsigned long long)mce->misc,
-		         (unsigned long long)mce->gstatus,
+		         mce->cpu, mce->bank,
+		         (unsigned long long)mce->mci_status,
+		         (unsigned long long)mce->mci_address,
+		         (unsigned long long)mce->mci_misc,
+		         (unsigned long long)mce->mcg_status,
 		         (unsigned long long)mce->time, mce->boot);
 	} else {
 		snprintf(buf, sizeof(buf)-1,
@@ -617,10 +618,10 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         "%%t=0x%016llx %%B=%d\n",
 		         mce->cpu, mce->vendor, (unsigned long)mce->cpuid_eax,
 		         mce->bank,
-		         (unsigned long long)mce->status,
-		         (unsigned long long)mce->address,
-		         (unsigned long long)mce->misc,
-		         (unsigned long long)mce->gstatus,
+		         (unsigned long long)mce->mci_status,
+		         (unsigned long long)mce->mci_address,
+		         (unsigned long long)mce->mci_misc,
+		         (unsigned long long)mce->mcg_status,
 		         (unsigned long long)mce->time, mce->boot);
 	}
 	r = safe_write(client, buf, strlen(buf));
@@ -683,10 +684,10 @@ safe_write(int fd, const char *buf, int len)
  * 	%v	- CPU vendor
  * 	%A	- CPUID 1 EAX
  * 	%b	- bank
- * 	%s	- status
- * 	%a	- address
- * 	%m	- misc
- * 	%g	- gstatus
+ * 	%s	- MCi status
+ * 	%a	- MCi address
+ * 	%m	- MCi misc
+ * 	%g	- MCG status
  * 	%t	- time
  * 	%B	- bootnum
  */
@@ -728,25 +729,25 @@ parse_cmd(const char *cmd, struct mce *mce)
 				used += snprintf(buf+used, size,
 				    "%u", (unsigned)mce->bank);
 			} else if (*p == 's') {
-				/* status */
+				/* mci_status */
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
-				    (unsigned long long)mce->status);
+				    (unsigned long long)mce->mci_status);
 			} else if (*p == 'a') {
-				/* address */
+				/* mci_address */
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
-				    (unsigned long long)mce->address);
+				    (unsigned long long)mce->mci_address);
 			} else if (*p == 'm') {
-				/* misc */
+				/* mci_misc */
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
-				    (unsigned long long)mce->misc);
+				    (unsigned long long)mce->mci_misc);
 			} else if (*p == 'g') {
-				/* gstatus */
+				/* mcg_status */
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
-				    (unsigned long long)mce->gstatus);
+				    (unsigned long long)mce->mcg_status);
 			} else if (*p == 't') {
 				/* time */
 				used += snprintf(buf+used, size,

@@ -550,10 +550,10 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	/* common fields for all versions of 'struct kernel_mce' */
 	mce->boot = bootnum;
 	mce->bank = kmce->bank;
-	mce->status = kmce->status;
-	mce->address = kmce->addr;
-	mce->misc = kmce->misc;
-	mce->gstatus = kmce->mcgstatus;
+	mce->mci_status = kmce->status;
+	mce->mci_address = kmce->addr;
+	mce->mci_misc = kmce->misc;
+	mce->mcg_status = kmce->mcgstatus;
 	mce->tsc = kmce->tsc;
 	mce->cs = kmce->cs;
 	mce->ip = kmce->rip;
@@ -649,7 +649,7 @@ do_one_mce(struct kernel_mce *kmce)
 	kmce_to_mce(kmce, &mce);
 
 	/* check for overflow */
-	if ((mce.status & MCI_STATUS_OVER)
+	if ((mce.mci_status & MCI_STATUS_OVER)
 	 && (mced_log_events || !apply_rate_limit(&hw_overflow_limit))) {
 		mced_log(LOG_WARNING, "MCE overflow detected by hardware\n");
 		if (!mced_log_events && overflow_suppress_time) {

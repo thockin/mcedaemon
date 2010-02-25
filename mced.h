@@ -98,10 +98,10 @@ struct kernel_mce {
 /* this is our notion of an MCE */
 //TODO(thockin): update for 2.6.31+ new fields
 struct mce {
-	uint64_t status;	/* MCi_STATUS */
-	uint64_t address;	/* MCi_ADDR */
-	uint64_t misc;		/* MCi_MISC */
-	uint64_t gstatus;	/* MCG_STATUS */
+	uint64_t mci_status;	/* MCi_STATUS */
+	uint64_t mci_address;	/* MCi_ADDR */
+	uint64_t mci_misc;	/* MCi_MISC */
+	uint64_t mcg_status;	/* MCG_STATUS */
 	uint64_t tsc;		/* CPU timestamp counter */
 	uint64_t time;		/* MCED timestamp (usecs since epoch) */
 	uint64_t ip;		/* CPU instruction pointer */
