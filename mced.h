@@ -110,7 +110,7 @@ struct mce {
 	uint32_t init_apic_id;	/* CPU initial APIC ID (-1UL for unknown) */
 	int32_t  socket;	/* CPU socket number (-1 for unknown) */
 	uint32_t mcg_cap;	/* MCG_CAP (0 for unknown) */
-	uint8_t  cs;		/* CPU code segment */
+	uint16_t cs;		/* CPU code segment */
 	uint8_t  bank;		/* MC bank */
 	int8_t   vendor;	/* CPU vendor (enum cpu_vendor) */
 } __attribute__ ((packed));

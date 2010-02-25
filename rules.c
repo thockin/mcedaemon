@@ -613,17 +613,20 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         (unsigned long long)mce->time, mce->boot);
 	} else {
 		snprintf(buf, sizeof(buf)-1,
-		         "%%B=%d "		// boot
-		         "%%c=%u %%S=%d "	// cpu, socket
-		         "%%p=0x%08lx"		// init_apic_id
-		         "%%v=%d %%A=0x%08lx "	// vendor, cpuid_eax
-		         "%%b=%u "		// bank
-		         "%%s=0x%016llx "	// mci_status
-		         "%%a=0x%016llx "	// mci_address
-		         "%%m=0x%016llx "	// mci_misc
-		         "%%g=0x%016llx "	// mcg_status
-		         "%%G=0x%08lx "		// mcg_cap
-		         "%%t=0x%016llx\n",	// time
+		         "%%B=%d"			// boot
+		         " %%c=%u %%S=%d"		// cpu, socket
+		         " %%p=0x%08lx"			// init_apic_id
+		         " %%v=%d %%A=0x%08lx"		// vendor, cpuid_eax
+		         " %%b=%u"			// bank
+		         " %%s=0x%016llx"		// mci_status
+		         " %%a=0x%016llx"		// mci_address
+		         " %%m=0x%016llx"		// mci_misc
+		         " %%g=0x%016llx"		// mcg_status
+		         " %%G=0x%08lx"			// mcg_cap
+		         " %%t=0x%016llx"		// time
+		         " %%T=0x%016llx"		// tsc
+		         " %%C=0x%04x %%I=0x%016llx"	// cs, ip
+		         "\n",
 		         (int)mce->boot,
 		         (unsigned)mce->cpu, (int)mce->socket,
 		         (unsigned long)mce->init_apic_id,
@@ -634,7 +637,9 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         (unsigned long long)mce->mci_misc,
 		         (unsigned long long)mce->mcg_status,
 		         (unsigned long)mce->mcg_cap,
-		         (unsigned long long)mce->time);
+		         (unsigned long long)mce->time,
+		         (unsigned long long)mce->tsc,
+		         (unsigned)mce->cs, (unsigned long long)mce->ip);
 	}
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
@@ -653,7 +658,6 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		free_rule(rule);
 		return -1;
 	}
-	safe_write(client, "\n", 1);
 
 	return 0;
 }
@@ -787,7 +791,7 @@ parse_cmd(const char *cmd, struct mce *mce)
 			} else if (*p == 'C') {
 				/* cs */
 				used += snprintf(buf+used, size,
-				    "0x%02x", mce->cs);
+				    "0x%04x", (unsigned)mce->cs);
 			} else if (*p == 'I') {
 				/* ip */
 				used += snprintf(buf+used, size,

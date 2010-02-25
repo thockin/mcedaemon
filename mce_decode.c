@@ -35,43 +35,44 @@ dump_mce(struct mce *mce)
 	printf("  cpu:     %d\n", mce->cpu);
 	printf("  bank:    %d\n", mce->bank);
 
-	printf("  gstatus: 0x%016llx\n", (unsigned long long)mce->gstatus);
-	if (mce->gstatus & BIT(0))
+	printf("  gstatus: 0x%016llx\n", (unsigned long long)mce->mcg_status);
+	if (mce->mcg_status & BIT(0))
 		printf("    [0]     = restart IP is valid\n");
-	if (mce->gstatus & BIT(1))
+	if (mce->mcg_status & BIT(1))
 		printf("    [1]     = error IP is valid\n");
-	if (mce->gstatus & BIT(2))
+	if (mce->mcg_status & BIT(2))
 		printf("    [2]     = machine check in progress\n");
-	printf("  status:  0x%016llx\n", (unsigned long long)mce->status);
-	if (mce->status & BIT(63))
+	printf("  status:  0x%016llx\n", (unsigned long long)mce->mci_status);
+	if (mce->mci_status & BIT(63))
 		printf("    [63]    = error is valid\n");
-	if (mce->status & BIT(62))
+	if (mce->mci_status & BIT(62))
 		printf("    [62]    = errors overflowed\n");
-	if (mce->status & BIT(61))
+	if (mce->mci_status & BIT(61))
 		printf("    [61]    = error is uncorrected\n");
 	else
 		printf("    [61]    = error is corrected\n");
-	if (mce->status & BIT(60))
+	if (mce->mci_status & BIT(60))
 		printf("    [60]    = error is enabled\n");
-	if (mce->status & BIT(59))
+	if (mce->mci_status & BIT(59))
 		printf("    [59]    = misc field is valid\n");
-	if (mce->status & BIT(58))
+	if (mce->mci_status & BIT(58))
 		printf("    [58]    = address field is valid\n");
-	if (mce->status & BIT(57))
+	if (mce->mci_status & BIT(57))
 		printf("    [57]    = processor context may be corrupt\n");
 	printf("    [16:0]  = MCA error code = 0x%04x\n",
-	    (unsigned)(mce->status & 0xffff));
+	    (unsigned)(mce->mci_status & 0xffff));
 	printf("    [31:16] = model-specific error code = 0x%04x\n",
-	    (unsigned)((mce->status>>16) & 0xffff));
+	    (unsigned)((mce->mci_status>>16) & 0xffff));
 	printf("    [56:32] = other information = 0x%06x\n",
-	    (unsigned)((mce->status>>32) & 0xffffff));
+	    (unsigned)((mce->mci_status>>32) & 0xffffff));
 
-	if (mce->status & BIT(58))
+	if (mce->mci_status & BIT(58))
 		printf("  address: 0x%016llx\n",
-		       (unsigned long long)mce->address);
+		       (unsigned long long)mce->mci_address);
 
-	if (mce->status & BIT(59))
-		printf("  misc:    0x%016llx\n", (unsigned long long)mce->misc);
+	if (mce->mci_status & BIT(59))
+		printf("  misc:    0x%016llx\n",
+		       (unsigned long long)mce->mci_misc);
 }
 
 static void
@@ -97,10 +98,10 @@ main(int argc, char **argv)
 
 	mce.cpu = strtoul(argv[1], NULL, 0);
 	mce.bank = strtoul(argv[2], NULL, 0);
-	mce.gstatus = strtoull(argv[3], NULL, 0);
-	mce.status = strtoull(argv[4], NULL, 0);
-	mce.address = strtoull(argv[5], NULL, 0);
-	mce.misc = strtoull(argv[6], NULL, 0);
+	mce.mcg_status = strtoull(argv[3], NULL, 0);
+	mce.mci_status = strtoull(argv[4], NULL, 0);
+	mce.mci_address = strtoull(argv[5], NULL, 0);
+	mce.mci_misc = strtoull(argv[6], NULL, 0);
 
 	dump_mce(&mce);
 

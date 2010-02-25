@@ -261,9 +261,9 @@ socket_client(void)
 #if ENABLE_DBUS
 /* handler for MCE events */
 static void
-mce_handler(DBusGProxy *proxy __attribute__((unused)),
-            const dbus_asv *asv,
-            void *data __attribute__((unused)))
+dbus_mce_handler(DBusGProxy *proxy __attribute__((unused)),
+                 const dbus_asv *asv,
+                 void *data __attribute__((unused)))
 {
 	const char *key;
 	GValue *value;
@@ -348,7 +348,7 @@ dbus_client(void)
 	                        dbus_asv_gtype(), G_TYPE_INVALID);
 
 	dbus_g_proxy_connect_signal(remote_value, DBUS_SIGNAL_NAME_MCE,
-	                            G_CALLBACK(mce_handler), NULL, NULL);
+	                            G_CALLBACK(dbus_mce_handler), NULL, NULL);
 
 	if (max_events == 0) {
 		return EXIT_SUCCESS;

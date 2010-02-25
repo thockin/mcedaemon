@@ -4,6 +4,10 @@
   - Added CPU socket as %S.
   - Added CPU initial APIC ID as %p.
   - Added MCG_CAP as %G.
+  - Send %T (tsc), %C (cs), and %I (ip) on the socket and DBUS, for
+    completeness.
+  - Fix bug in client rules that caused an extra newline to be sent.
+  - Update mce_decode with new struct field names.
 
 * Sun Feb 21 2010  Tim Hockin <thockin@hockin.org>
   - Add support for NULL short or long options. [cmdline.c]
