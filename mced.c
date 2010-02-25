@@ -561,8 +561,11 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	if (kernel_mce_version == KERNEL_MCE_V1) {
 		mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
 		mce->cpu = kmce->cpu;
+		mce->socket = -1;
 		mce->vendor = VENDOR_UNKNOWN;
 		mce->cpuid_eax = 0;
+		mce->init_apic_id = (uint32_t)-1U;
+		mce->mcg_status = 0;
 	} else if (kernel_mce_version == KERNEL_MCE_V2) {
 		if (kmce->time != 0) {
 			mce->time = kmce->time * 1000000ULL;
@@ -570,8 +573,11 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 			mce->time = (tv.tv_sec * 1000000ULL) + tv.tv_usec;
 		}
 		mce->cpu = kmce->extcpu;
+		mce->socket = kmce->socketid;
 		mce->vendor = kmce->cpuvendor;
 		mce->cpuid_eax = kmce->cpuid;
+		mce->init_apic_id = kmce->apicid;
+		mce->mcg_status = kmce->mcgcap;
 	} else {
 		/* this should never happen */
 		mced_log(LOG_EMERG,

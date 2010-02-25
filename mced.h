@@ -96,7 +96,6 @@ struct kernel_mce {
 #define MCE_FLAG_OVERFLOW    (1ULL << 0)
 
 /* this is our notion of an MCE */
-//TODO(thockin): update for 2.6.31+ new fields
 struct mce {
 	uint64_t mci_status;	/* MCi_STATUS */
 	uint64_t mci_address;	/* MCi_ADDR */
@@ -107,10 +106,13 @@ struct mce {
 	uint64_t ip;		/* CPU instruction pointer */
 	int32_t  boot;		/* boot number (-1 for unknown) */
 	uint32_t cpu;		/* excepting CPU */
-	uint32_t cpuid_eax;	/* CPUID 1, EAX */
+	uint32_t cpuid_eax;	/* CPUID 1, EAX (0 for unknown) */
+	uint32_t init_apic_id;	/* CPU initial APIC ID (-1UL for unknown) */
+	int32_t  socket;	/* CPU socket number (-1 for unknown) */
+	uint32_t mcg_cap;	/* MCG_CAP (0 for unknown) */
 	uint8_t  cs;		/* CPU code segment */
 	uint8_t  bank;		/* MC bank */
-	int8_t   vendor;	/* CPU vendor */
+	int8_t   vendor;	/* CPU vendor (enum cpu_vendor) */
 } __attribute__ ((packed));
 #define MCE_STRUCT_VER	1
 

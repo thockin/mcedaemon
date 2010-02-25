@@ -109,6 +109,8 @@ dbus_send_mce(struct mce *mce)
 	/* convert a 'struct mce' into a 'dbus_asv' */
 	dbus_asv *payload = dbus_asv_new(
 	    "%c", G_TYPE_UINT,   (uint32_t)mce->cpu,
+	    "%S", G_TYPE_INT,    (int32_t)mce->socket,
+	    "%p", G_TYPE_UINT,   (uint32_t)mce->init_apic_id,
 	    "%v", G_TYPE_INT,    (int32_t)mce->vendor,
 	    "%A", G_TYPE_UINT,   (int32_t)mce->cpuid_eax,
 	    "%b", G_TYPE_UINT,   (uint32_t)mce->bank,
@@ -116,6 +118,7 @@ dbus_send_mce(struct mce *mce)
 	    "%a", G_TYPE_UINT64, (uint64_t)mce->mci_address,
 	    "%m", G_TYPE_UINT64, (uint64_t)mce->mci_misc,
 	    "%g", G_TYPE_UINT64, (uint64_t)mce->mcg_status,
+	    "%G", G_TYPE_UINT,   (uint32_t)mce->mcg_cap,
 	    "%t", G_TYPE_UINT64, (uint64_t)mce->time,
 	    "%B", G_TYPE_INT,    (int32_t)mce->boot,
 	    NULL);

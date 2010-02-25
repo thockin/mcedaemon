@@ -1,6 +1,9 @@
 %changelog
 * Thu Feb 25 2010  Tim Hockin <thockin@google.com>
   - Rename some 'struct mce' fields to accommodate new fields better.
+  - Added CPU socket as %S.
+  - Added CPU initial APIC ID as %p.
+  - Added MCG_CAP as %G.
 
 * Sun Feb 21 2010  Tim Hockin <thockin@hockin.org>
   - Add support for NULL short or long options. [cmdline.c]

@@ -603,7 +603,7 @@ do_client_rule(struct rule *rule, struct mce *mce)
 
 	if (mced_legacy_socket) {
 		snprintf(buf, sizeof(buf)-1,
-		         "%d %d 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
+		         "%u %u 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
 		         "0x%016llx %d\n",
 		         mce->cpu, mce->bank,
 		         (unsigned long long)mce->mci_status,
@@ -613,16 +613,28 @@ do_client_rule(struct rule *rule, struct mce *mce)
 		         (unsigned long long)mce->time, mce->boot);
 	} else {
 		snprintf(buf, sizeof(buf)-1,
-		         "%%c=%d %%v=%d %%A=0x%08lx %%b=%d %%s=0x%016llx "
-		         "%%a=0x%016llx %%m=0x%016llx %%g=0x%016llx "
-		         "%%t=0x%016llx %%B=%d\n",
-		         mce->cpu, mce->vendor, (unsigned long)mce->cpuid_eax,
-		         mce->bank,
+		         "%%B=%d "		// boot
+		         "%%c=%u %%S=%d "	// cpu, socket
+		         "%%p=0x%08lx"		// init_apic_id
+		         "%%v=%d %%A=0x%08lx "	// vendor, cpuid_eax
+		         "%%b=%u "		// bank
+		         "%%s=0x%016llx "	// mci_status
+		         "%%a=0x%016llx "	// mci_address
+		         "%%m=0x%016llx "	// mci_misc
+		         "%%g=0x%016llx "	// mcg_status
+		         "%%G=0x%08lx "		// mcg_cap
+		         "%%t=0x%016llx\n",	// time
+		         (int)mce->boot,
+		         (unsigned)mce->cpu, (int)mce->socket,
+		         (unsigned long)mce->init_apic_id,
+		         (int)mce->vendor, (unsigned long)mce->cpuid_eax,
+		         (unsigned)mce->bank,
 		         (unsigned long long)mce->mci_status,
 		         (unsigned long long)mce->mci_address,
 		         (unsigned long long)mce->mci_misc,
 		         (unsigned long long)mce->mcg_status,
-		         (unsigned long long)mce->time, mce->boot);
+		         (unsigned long)mce->mcg_cap,
+		         (unsigned long long)mce->time);
 	}
 	r = safe_write(client, buf, strlen(buf));
 	if (r < 0 && errno == EPIPE) {
@@ -681,13 +693,16 @@ safe_write(int fd, const char *buf, int len)
 /*
  * Valid expansions:
  * 	%c	- CPU
+ * 	%S	- CPU socket
+ * 	%p	- CPU initial APIC ID
  * 	%v	- CPU vendor
- * 	%A	- CPUID 1 EAX
- * 	%b	- bank
+ * 	%A	- CPUID(1) EAX
+ * 	%b	- MC bank
  * 	%s	- MCi status
  * 	%a	- MCi address
  * 	%m	- MCi misc
  * 	%g	- MCG status
+ * 	%G	- MCG capabilities
  * 	%t	- time
  * 	%B	- bootnum
  */
@@ -715,12 +730,21 @@ parse_cmd(const char *cmd, struct mce *mce)
 				/* cpu */
 				used += snprintf(buf+used, size,
 				    "%u", (unsigned)mce->cpu);
+			} else if (*p == 'S') {
+				/* cpu socket */
+				used += snprintf(buf+used, size,
+				    "%d", (int)mce->vendor);
+			} else if (*p == 'p') {
+				/* cpu init_apic_id */
+				used += snprintf(buf+used, size,
+				    "0x%08lx",
+				    (unsigned long)mce->init_apic_id);
 			} else if (*p == 'v') {
 				/* vendor */
 				used += snprintf(buf+used, size,
 				    "%d", (int)mce->vendor);
 			} else if (*p == 'A') {
-				/* CPUID 1 EAX */
+				/* CPUID(1) EAX */
 				used += snprintf(buf+used, size,
 				    "0x%08lx",
 				    (unsigned long)mce->cpuid_eax);
@@ -748,6 +772,10 @@ parse_cmd(const char *cmd, struct mce *mce)
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
 				    (unsigned long long)mce->mcg_status);
+			} else if (*p == 'G') {
+				/* mcg_cap */
+				used += snprintf(buf+used, size,
+				    "0x%08lx", (unsigned long)mce->mcg_cap);
 			} else if (*p == 't') {
 				/* time */
 				used += snprintf(buf+used, size,
