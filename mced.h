@@ -33,7 +33,8 @@
 #define MCED_MAX_INTERVAL		5000 /* milliseconds */
 #define MCED_MIN_INTERVAL		100  /* milliseconds */
 #define MCED_CONFDIR			"/etc/mced"
-#define MCED_SOCKETFILE			"/var/run/mced.socket"
+#define MCED_SOCKETFILE_V1		"/var/run/mced.socket"
+#define MCED_SOCKETFILE_V2		"/var/run/mced2.socket"
 #define MCED_SOCKETMODE			0600
 #define MCED_PIDFILE			"/var/run/mced.pid"
 #define MCED_DBDIR			"/var/log/mced_db/"

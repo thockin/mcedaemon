@@ -106,14 +106,13 @@ The "%G" expansion is only supported on kernel 2.6.31 and higher.  It will
 read as 0 on older kernels.
 .PP
 The command string may contain spaces, so the commandline must take care
-to use quotes if it wants a tokens with spaces.  The string "%%" will be
-replaced by a literal "%".  All other "%" expansions are reserved, and will
-cause a rule to not load.
+to use quotes if it wants a token with spaces.  The string "%%" will be
+replaced by a literal "%".  All other "%" expansions are reserved.
 .PP
 To force \fBmced\fP to reload the rule configuration, send it a SIGHUP.
 .PP
 In addition to rule files, \fBmced\fP also accepts connections on a UNIX
-domain socket (\fI/var/run/mced.socket\fP by default).  Any application
+domain socket (\fI/var/run/mced2.socket\fP by default).  Any application
 may connect to this socket.  Once connected, \fBmced\fP will send the text of
 all MCE events to the client.  Each event is sent on a single line,
 terminated by a newline ('\\n') character.  The data is formatted as a
@@ -124,7 +123,13 @@ is not significant. Example:
 .br
 	%c=0 %v=0 %b=4 %s=0x12345678 %a=0xabcdef %m=0x00000000 %g=0x00000000
 	%t=8675309 %B=42
-.br
+.PP
+If the \-O (\--oldsocket) flag is specified, \fBmced\fP will be compatible
+with the socket behavior of \fBmced\fP version 1.x, including using
+\fI/var/run/mced.socket\fP as the default socket and falling back on the
+legacy data format.  The \-s (\--socketfile) flag always overrides the
+default socket path, regardless of the \-O flag.
+.PP
 \fBmced\fP will not close the client socket except in the case of a SIGHUP
 or \fBmced\fP exiting.
 .PP
@@ -203,11 +208,11 @@ disable rate limiting for these messages.  Using \-l (\--logevents) will
 override this option. (Default is \fI10\fP seconds.
 .TP
 .BI \-O "\fR, \fP" \--oldsocket
-This option forces \fBmced\fP to use the legacy socket data format
-(formatted as "%c %b %s %a %m %g %t %B\\n").  Use this if you have socket
-clients that require the \fBmced\fP version 1.x behavior.  Use of this
-option is discouraged, as new MCE fields are only available with the
-modern socket data format.
+This option forces \fBmced\fP to use the legacy socket path
+(\fI/var/run/mced.socket\fP) and data format (formatted as "%c %b %s %a %m
+%g %t %B\\n").  Use this if you have socket clients that require the
+\fBmced\fP version 1.x behavior.  Use of this option is discouraged, as
+new MCE fields are only available with the modern socket data format.
 .TP
 .BI \-p "\fR, \fP" \--pidfile " filename"
 This option changes the name of the pidfile to which \fBmced\fP writes.
@@ -232,7 +237,7 @@ to open. \fBmced\fP will retry the device at every polling interval.  See
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
 This option changes the name of the UNIX domain socket which \fBmced\fP opens.
-Default is \fI/var/run/mced/mced.socket\fP.
+Default is \fI/var/run/mced/mced2.socket\fP.  See also \-O (\--oldsocket).
 .TP
 .BI \-S "\fR, \fP" \--nosocket " filename"
 This option tells \fBmced\fP not to open a UNIX domain socket.  This

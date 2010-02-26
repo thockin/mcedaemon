@@ -82,11 +82,11 @@ static cmdline_string device = MCED_EVENTFILE;
 static cmdline_int max_interval_ms = MCED_MAX_INTERVAL;
 static cmdline_int min_interval_ms = MCED_MIN_INTERVAL;
 static cmdline_int mce_rate_limit = -1;
-static cmdline_string socketfile = MCED_SOCKETFILE;
+static cmdline_string socketfile = NULL;
 static cmdline_bool nosocket = 0;
 static cmdline_string socketgroup = NULL;
 static cmdline_mode_t socketmode = MCED_SOCKETMODE;
-static cmdline_bool old_socket_style = 0;
+static cmdline_bool use_v1_socket = 0;
 static cmdline_bool foreground = 0;
 static cmdline_string pidfile = MCED_PIDFILE;
 static cmdline_int clientmax = MCED_CLIENTMAX;
@@ -209,8 +209,8 @@ static struct cmdline_opt mced_opts[] = {
 	},
 	{
 		"O", "oldsocket",
-		CMDLINE_OPT_BOOL, &old_socket_style,
-		"", "Make socket output compatible with mced v1.x"
+		CMDLINE_OPT_BOOL, &use_v1_socket,
+		"", "Make socket behavior compatible with mced v1.x"
 	},
 	#if ENABLE_DBUS
 	{
@@ -293,7 +293,17 @@ handle_cmdline(int *argc, const char ***argv)
 	if (mce_rate_limit <= 0) {
 		mce_rate_limit = -1;
 	}
-	mced_legacy_socket = old_socket_style;
+	if (use_v1_socket) {
+		mced_legacy_socket = 1;
+		if (socketfile == NULL) {
+			socketfile = MCED_SOCKETFILE_V1;
+		}
+	} else {
+		if (socketfile == NULL) {
+			socketfile = MCED_SOCKETFILE_V2;
+		}
+	}
+
 
 	return 0;
 }

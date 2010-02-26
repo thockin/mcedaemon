@@ -50,9 +50,11 @@
 #include "auto.dbus_client.h"
 #endif
 
-static cmdline_string socketfile = MCED_SOCKETFILE;
+static cmdline_string socketfile = NULL;
 static cmdline_int max_events = -1;
 static cmdline_int time_limit = -1;
+static cmdline_bool use_v1_socket = 0;
+
 #if ENABLE_DBUS
 static cmdline_bool use_dbus = 0;
 static cmdline_bool use_session_dbus = 0;
@@ -70,6 +72,11 @@ static struct cmdline_opt cmdline_opts[] = {
 		"s", "socketfile",
 		CMDLINE_OPT_STRING, &socketfile,
 		"<file>", "Use the specified socket file"
+	},
+	{
+		"O", "oldsocket",
+		CMDLINE_OPT_BOOL, &use_v1_socket,
+		"", "Make socket behavior compatible with mced v1.x"
 	},
 	{
 		"t", "time",
@@ -139,6 +146,13 @@ handle_cmdline(int *argc, const char ***argv)
 	}
 	if (time_limit > 0) {
 		alarm(time_limit);
+	}
+	if (socketfile == NULL) {
+		if (use_v1_socket) {
+			socketfile = MCED_SOCKETFILE_V1;
+		} else {
+			socketfile = MCED_SOCKETFILE_V2;
+		}
 	}
 
 	return 0;

@@ -8,6 +8,7 @@
     completeness.
   - Fix bug in client rules that caused an extra newline to be sent.
   - Update mce_decode with new struct field names.
+  - Use mced2.socket instead of mced.socket by default.
 
 * Sun Feb 21 2010  Tim Hockin <thockin@hockin.org>
   - Add support for NULL short or long options. [cmdline.c]
