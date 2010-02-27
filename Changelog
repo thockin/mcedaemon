@@ -1,4 +1,7 @@
 %changelog
+* Sat Feb 27 2010  Tim Hockin <thockin@google.com>
+  - Rename examples to be valid config files.
+
 * Fri Feb 26 2010  Tim Hockin <thockin@google.com>
   - Make config file format more flexible wrt whitespace.
 

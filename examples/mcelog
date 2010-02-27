@@ -1,3 +1,0 @@
-(echo "CPU %c  Machine Check Exception: %g Bank %b: %s";
- echo "ADDR %a";
- echo "MISC %m";) | mcelog --ascii
