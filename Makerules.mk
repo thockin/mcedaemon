@@ -164,7 +164,7 @@ dep depend:
 .depend:
 	@for f in $^; do \
 		OBJ=$$(echo $$f | sed 's/\.cp*$$/.o/'); \
-		$(CPP) $(CPPFLAGS) -MM $$f -MT $$OBJ; \
+		$(CPP) $(CPPFLAGS) -MM -MG $$f -MT $$OBJ; \
 	done > $@.tmp; \
 	diff -w -B -q $@ $@.tmp >/dev/null 2>&1; \
 	if [ $$? != 0 ]; then \

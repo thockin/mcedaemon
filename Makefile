@@ -25,9 +25,9 @@ include $(TOPDIR)/Makerules.mk
 
 DEFS += -D_GNU_SOURCE
 CWARNS += -Wundef -Wshadow -Wno-strict-aliasing
-CFLAGS += -DENABLE_MCEDB=$(ENABLE_MCEDB)
-CFLAGS += -DENABLE_DBUS=$(ENABLE_DBUS)
-CFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
+CPPFLAGS += -DENABLE_MCEDB=$(ENABLE_MCEDB)
+CPPFLAGS += -DENABLE_DBUS=$(ENABLE_DBUS)
+CPPFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
 ifneq "$(strip $(ENABLE_MCEDB))" "0"
 LIBS += -ldb
 endif
@@ -49,14 +49,12 @@ PROGS = $(SBIN_PROGS) $(BIN_PROGS) $(TEST_PROGS)
 mced_SRCS = mced.c rules.c util.c ud_socket.c cmdline.c
 ifneq "$(strip $(ENABLE_DBUS))" "0"
 mced_SRCS += dbus.c dbus_asv.c
-mced_DEPS += auto.dbus_server.h
 endif
 mced_OBJS = $(mced_SRCS:.c=.o)
 
 mce_listen_SRCS = mce_listen.c util.c ud_socket.c cmdline.c
 ifneq "$(strip $(ENABLE_DBUS))" "0"
 mce_listen_SRCS += dbus_asv.c
-mce_listen_DEPS += auto.dbus_client.h
 endif
 mce_listen_OBJS = $(mce_listen_SRCS:.c=.o)
 
@@ -75,22 +73,24 @@ MAN8GZ = $(MAN8:.8=.8.gz)
 
 all: $(PROGS)
 
-mced: $(mced_DEPS) $(mced_OBJS)
+mced: $(mced_OBJS)
 	$(CC) -o $@ $(mced_OBJS) $(LDFLAGS) $(LDLIBS)
 
-auto.dbus_client.h auto.dbus_server.h: dbus_interface.xml
+auto.dbus_client.h: dbus_interface.xml
 	dbus-binding-tool \
 	    --prefix=mced_gobject \
 	    --mode=glib-client \
 	    --output=$@ \
 	    $<
+
+auto.dbus_server.h: dbus_interface.xml
 	dbus-binding-tool \
 	    --prefix=mced_gobject \
 	    --mode=glib-server \
 	    --output=$@ \
 	    $<
 
-mce_listen: $(mce_listen_DEPS) $(mce_listen_OBJS)
+mce_listen: $(mce_listen_OBJS)
 	$(CC) -o $@ $(mce_listen_OBJS) $(LDFLAGS) $(LDLIBS)
 
 mcelog_faker: $(mcelog_faker_OBJS)
