@@ -19,7 +19,12 @@ immediately exit.  This is useful as a 'ping' of sorts.
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
 This option changes the name of the UNIX domain socket which
-\fBmce_listen\fP opens.  Default is \fI/var/run/mced.socket\fP.
+\fBmce_listen\fP opens.  Default is \fI/var/run/mced2.socket\fP.
+.TP
+.BI \-O "\fR, \fP" \--oldsocket
+This option forces \fBmce_listen\fP to use the legacy socket path
+(\fI/var/run/mced.socket\fP).  The \-s (\--socketfile) flag always
+takes precedence over this flag.
 .TP
 .BI \-t "\fR, \fP" \--time " seconds"
 Listen for the specified time in seconds, before exiting.  Setting this to
@@ -42,6 +47,8 @@ Show help and exit.
 
 .SH FILES
 .PD 0
+.B /var/run/mced2.socket
+.br
 .B /var/run/mced.socket
 .PD
 
