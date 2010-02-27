@@ -1,4 +1,7 @@
 %changelog
+* Fri Feb 26 2010  Tim Hockin <thockin@google.com>
+  - Make config file format more flexible wrt whitespace.
+
 * Thu Feb 25 2010  Tim Hockin <thockin@google.com>
   - Rename some 'struct mce' fields to accommodate new fields better.
   - Added CPU socket as %S.

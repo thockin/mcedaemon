@@ -18,15 +18,21 @@ and parse all files that do not begin with a period ('.') or end with a
 tilde ('~').  Any blank lines, or lines where the first character is a
 hash ('#') are ignored.  Extraneous lines are flagged as warnings,
 but are not fatal.  Each line has three tokens: the key, a literal equal
-sign, and the value.  The key can be up to 63 characters, and is
-case-insensitive (but whitespace matters).  The value can be up to 511
-characters, and is case and whitespace sensitive.
+sign, and the value.  Each token may be surrounded by whitespace which
+will be ignored.  The key is a series of alpha-numeric characters or a
+underscores and is case-insensitive.  The value begins at the first
+non-whitespace character after the equal sign.  Examples:
+.br
+	foo=bar         => key = "foo", value = "bar"
+.br
+	foo = bar       => key = "foo", value = "bar"
+.br
+	 foo = bar      => key = "foo", value = "bar"
+.br
+	foo = "bar"     => key = "foo", value = "\\"bar\\""
 .PP
-The only configuration key at this time is \fIaction\fP.  Each conf
-file must define exactly one \fIaction\fP.  Example:
-.br
-	action=/bin/true
-.br
+The only supported configuration key at this time is \fIaction\fP.  Each
+config file must define exactly one \fIaction\fP.
 .PP
 The action value is a commandline, which will be invoked via \fI/bin/sh\fP
 whenever an event occurs.  The commandline may

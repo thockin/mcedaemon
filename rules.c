@@ -39,6 +39,7 @@
 #include <signal.h>
 
 #include "mced.h"
+#include "util.h"
 #include "ud_socket.h"
 
 /*
@@ -196,19 +197,89 @@ mced_cleanup_rules(int do_detach)
 	return 0;
 }
 
+/*
+ * An unrolled state machine for parsing key = value lines.
+ *
+ * Allowed format: WS1 key WS2 '=' WS3 value WS4
+ */
+static int
+line_to_key_value(char *line, char **keyp, char **valp)
+{
+	char *p;
+
+	/* start at the beginning */
+	p = line;
+	/* skip any leading whitespace (WS1) */
+	while (*p != '\0' && isspace(*p)) {
+		p++;
+	}
+	/* if we hit EOL, error */
+	if (*p == '\0') {
+		return -1;
+	}
+	/* we found the start of the key */
+	*keyp = p;
+	/* skip [A-Za-z0-9_]+ */
+	while (*p != '\0' && (isalnum(*p) || *p == '_')) {
+		p++;
+	}
+	/* if we hit EOL or did not move at all, error */
+	if (*p == '\0' || p == *keyp) {
+		return -1;
+	}
+	/* if we found a space, terminate the key and move past WS2 */
+	if (isspace(*p)) {
+		*p++ = '\0';
+		while (*p != '\0' && isspace(*p)) {
+			p++;
+		}
+	}
+	/* if we found anything but '=', error */
+	if (*p != '=') {
+		return -1;
+	}
+	/* terminate the key (if it was not terminated above) */
+	*p++ = '\0';
+	/* skip any whitespace (WS3) */
+	while (*p != '\0' && isspace(*p)) {
+		p++;
+	}
+	/* if we hit EOL, error */
+	if (*p == '\0') {
+		return -1;
+	}
+	/* we found the start of the value */
+	*valp = p;
+	/* move to the end of the line */
+	while (*p != '\0') {
+		p++;
+	}
+	/* step back one to a valid character */
+	p--;
+	/* rewind past any trailing whitespace (WS4) */
+	while (isspace(*p)) {
+		p--;
+	}
+	/* step forward again */
+	p++;
+	/* terminate the value */
+	*p = '\0';
+
+	return 0;
+}
+
 static struct rule *
 parse_file(const char *file)
 {
-	FILE *fp;
-	char buf[512];
+	int fd;
 	int line = 0;
 	struct rule *r;
 
 	mced_debug(1, "DBG: parsing conf file %s\n", file);
 
-	fp = fopen(file, "r");
-	if (!fp) {
-		mced_log(LOG_ERR, "ERR: fopen(%s): %s\n",
+	fd = open(file, O_RDONLY);
+	if (fd < 0) {
+		mced_log(LOG_ERR, "ERR: open(%s): %s\n",
 		    file, strerror(errno));
 		return NULL;
 	}
@@ -216,7 +287,7 @@ parse_file(const char *file)
 	/* make a new rule */
 	r = new_rule();
 	if (!r) {
-		fclose(fp);
+		close(fd);
 		return NULL;
 	}
 	r->type = RULE_CMD;
@@ -224,37 +295,29 @@ parse_file(const char *file)
 	if (!r->origin) {
 		mced_perror(LOG_ERR, "ERR: strdup()");
 		free_rule(r);
-		fclose(fp);
+		close(fd);
 		return NULL;
 	}
 
 	/* read each line */
-	while (!feof(fp) && !ferror(fp)) {
-		char *p = buf;
-		char key[64];
-		char val[512];
-		int n;
+	char *buf;
+	while ((buf = read_line(fd))) {
+		char *key;
+		char *val;
 
 		line++;
-		memset(key, 0, sizeof(key));
-		memset(val, 0, sizeof(val));
-
-		if (fgets(buf, sizeof(buf)-1, fp) == NULL) {
-			continue;
-		}
 
 		/* skip leading whitespace */
-		while (*p && isspace((int)*p)) {
-			p++;
+		while (*buf && isspace((int)*buf)) {
+			buf++;
 		}
 		/* blank lines and comments get ignored */
-		if (!*p || *p == '#') {
+		if (*buf == '\0' || *buf == '#') {
 			continue;
 		}
 
-		/* quick parse */
-		n = sscanf(p, "%63[^=\n]=%255[^\n]", key, val);
-		if (n != 2) {
+		/* break it into a key and a value */
+		if (line_to_key_value(buf, &key, &val) < 0) {
 			mced_log(LOG_WARNING, "can't parse %s at line %d\n",
 				file, line);
 			continue;
@@ -267,7 +330,7 @@ parse_file(const char *file)
 			if (!r->action.cmd) {
 				mced_perror(LOG_ERR, "ERR: strdup()");
 				free_rule(r);
-				fclose(fp);
+				close(fd);
 				return NULL;
 			}
 		} else {
@@ -280,10 +343,10 @@ parse_file(const char *file)
 	if (!r->action.cmd) {
 		mced_debug(1, "DBG: skipping incomplete file %s\n", file);
 		free_rule(r);
-		fclose(fp);
+		close(fd);
 		return NULL;
 	}
-	fclose(fp);
+	close(fd);
 
 	return r;
 }
