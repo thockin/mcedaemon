@@ -49,7 +49,8 @@ struct rule {
 	enum {
 		RULE_NONE = 0,
 		RULE_CMD,
-		RULE_CLIENT,
+		RULE_V1_CLIENT,
+		RULE_V2_CLIENT,
 	} type;
 	char *origin;
 	union {
@@ -77,9 +78,10 @@ static void lock_rules(void);
 static void unlock_rules(void);
 static sigset_t *signals_handled(void);
 static struct rule *parse_file(const char *file);
-static struct rule *parse_client(int client);
+static struct rule *parse_client(int client, int is_legacy);
 static int do_cmd_rule(struct rule *r, struct mce *mce);
-static int do_client_rule(struct rule *r, struct mce *mce);
+static int do_v1_client_rule(struct rule *r, struct mce *mce);
+static int do_v2_client_rule(struct rule *r, struct mce *mce);
 static int safe_write(int fd, const char *buf, int len);
 static char *parse_cmd(const char *cmd, struct mce *mce);
 
@@ -352,16 +354,17 @@ parse_file(const char *file)
 }
 
 int
-mced_add_client(int clifd, const char *origin)
+mced_add_client(int clifd, const char *origin, int is_legacy)
 {
 	struct rule *r;
 	int nrules = 0;
 
 	if (mced_log_events) {
-		mced_log(LOG_NOTICE, "client connected from %s\n", origin);
+		mced_log(LOG_NOTICE, "%sclient connected from %s\n",
+		         is_legacy ? "legacy " : "", origin);
 	}
 
-	r = parse_client(clifd);
+	r = parse_client(clifd, is_legacy);
 	if (r) {
 		r->origin = strdup(origin);
 		enlist_rule(&client_list, r);
@@ -377,7 +380,7 @@ mced_add_client(int clifd, const char *origin)
 }
 
 static struct rule *
-parse_client(int client)
+parse_client(int client, int is_legacy)
 {
 	struct rule *r;
 
@@ -386,7 +389,7 @@ parse_client(int client)
 	if (!r) {
 		return NULL;
 	}
-	r->type = RULE_CLIENT;
+	r->type = is_legacy ? RULE_V1_CLIENT : RULE_V2_CLIENT;
 	r->action.fd = client;
 
 	return r;
@@ -543,8 +546,10 @@ mced_handle_mce(struct mce *mce)
 			nrules++;
 			if (p->type == RULE_CMD) {
 				do_cmd_rule(p, mce);
-			} else if (p->type == RULE_CLIENT) {
-				do_client_rule(p, mce);
+			} else if (p->type == RULE_V1_CLIENT) {
+				do_v1_client_rule(p, mce);
+			} else if (p->type == RULE_V2_CLIENT) {
+				do_v2_client_rule(p, mce);
 			} else {
 				mced_log(LOG_WARNING,
 				    "unknown rule type: %d\n", p->type);
@@ -654,57 +659,15 @@ do_cmd_rule(struct rule *rule, struct mce *mce)
 }
 
 static int
-do_client_rule(struct rule *rule, struct mce *mce)
-{
-	int r;
+write_to_client(struct rule *rule, const char *buf, size_t len) {
 	int client = rule->action.fd;
-	char buf[2048];
+	int r;
 
 	if (mced_log_events) {
 		mced_log(LOG_NOTICE, "notifying client %s\n", rule->origin);
 	}
 
-	if (mced_legacy_socket) {
-		snprintf(buf, sizeof(buf)-1,
-		         "%u %u 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
-		         "0x%016llx %d\n",
-		         mce->cpu, mce->bank,
-		         (unsigned long long)mce->mci_status,
-		         (unsigned long long)mce->mci_address,
-		         (unsigned long long)mce->mci_misc,
-		         (unsigned long long)mce->mcg_status,
-		         (unsigned long long)mce->time, mce->boot);
-	} else {
-		snprintf(buf, sizeof(buf)-1,
-		         "%%B=%d"			// boot
-		         " %%c=%u %%S=%d"		// cpu, socket
-		         " %%p=0x%08lx"			// init_apic_id
-		         " %%v=%d %%A=0x%08lx"		// vendor, cpuid_eax
-		         " %%b=%u"			// bank
-		         " %%s=0x%016llx"		// mci_status
-		         " %%a=0x%016llx"		// mci_address
-		         " %%m=0x%016llx"		// mci_misc
-		         " %%g=0x%016llx"		// mcg_status
-		         " %%G=0x%08lx"			// mcg_cap
-		         " %%t=0x%016llx"		// time
-		         " %%T=0x%016llx"		// tsc
-		         " %%C=0x%04x %%I=0x%016llx"	// cs, ip
-		         "\n",
-		         (int)mce->boot,
-		         (unsigned)mce->cpu, (int)mce->socket,
-		         (unsigned long)mce->init_apic_id,
-		         (int)mce->vendor, (unsigned long)mce->cpuid_eax,
-		         (unsigned)mce->bank,
-		         (unsigned long long)mce->mci_status,
-		         (unsigned long long)mce->mci_address,
-		         (unsigned long long)mce->mci_misc,
-		         (unsigned long long)mce->mcg_status,
-		         (unsigned long)mce->mcg_cap,
-		         (unsigned long long)mce->time,
-		         (unsigned long long)mce->tsc,
-		         (unsigned)mce->cs, (unsigned long long)mce->ip);
-	}
-	r = safe_write(client, buf, strlen(buf));
+	r = safe_write(client, buf, len);
 	if (r < 0 && errno == EPIPE) {
 		struct ucred cred;
 		/* closed */
@@ -723,6 +686,61 @@ do_client_rule(struct rule *rule, struct mce *mce)
 	}
 
 	return 0;
+}
+
+static int
+do_v1_client_rule(struct rule *rule, struct mce *mce)
+{
+	char buf[2048];
+
+	snprintf(buf, sizeof(buf)-1,
+	         "%u %u 0x%016llx 0x%016llx 0x%016llx 0x%016llx "
+	         "0x%016llx %d\n",
+	         mce->cpu, mce->bank,
+	         (unsigned long long)mce->mci_status,
+	         (unsigned long long)mce->mci_address,
+	         (unsigned long long)mce->mci_misc,
+	         (unsigned long long)mce->mcg_status,
+	         (unsigned long long)mce->time, mce->boot);
+
+	return write_to_client(rule, buf, strlen(buf));
+}
+
+static int
+do_v2_client_rule(struct rule *rule, struct mce *mce)
+{
+	char buf[2048];
+
+	snprintf(buf, sizeof(buf)-1,
+		 "%%B=%d"			// boot
+		 " %%c=%u %%S=%d"		// cpu, socket
+		 " %%p=0x%08lx"			// init_apic_id
+		 " %%v=%d %%A=0x%08lx"		// vendor, cpuid_eax
+		 " %%b=%u"			// bank
+		 " %%s=0x%016llx"		// mci_status
+		 " %%a=0x%016llx"		// mci_address
+		 " %%m=0x%016llx"		// mci_misc
+		 " %%g=0x%016llx"		// mcg_status
+		 " %%G=0x%08lx"			// mcg_cap
+		 " %%t=0x%016llx"		// time
+		 " %%T=0x%016llx"		// tsc
+		 " %%C=0x%04x %%I=0x%016llx"	// cs, ip
+		 "\n",
+		 (int)mce->boot,
+		 (unsigned)mce->cpu, (int)mce->socket,
+		 (unsigned long)mce->init_apic_id,
+		 (int)mce->vendor, (unsigned long)mce->cpuid_eax,
+		 (unsigned)mce->bank,
+		 (unsigned long long)mce->mci_status,
+		 (unsigned long long)mce->mci_address,
+		 (unsigned long long)mce->mci_misc,
+		 (unsigned long long)mce->mcg_status,
+		 (unsigned long)mce->mcg_cap,
+		 (unsigned long long)mce->time,
+		 (unsigned long long)mce->tsc,
+		 (unsigned)mce->cs, (unsigned long long)mce->ip);
+
+	return write_to_client(rule, buf, strlen(buf));
 }
 
 #define NTRIES 100

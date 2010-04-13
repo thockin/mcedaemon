@@ -5,7 +5,7 @@ TOPDIR = $(shell pwd)
 BUILD_CONFIG = $(TOPDIR)/BUILD_CONFIG
 
 # project version
-PRJ_VERSION = 2.0.0
+PRJ_VERSION = 2.0.1
 
 # assign build options default values
 # Use '?=' variable assignment so ENV variables can be used.

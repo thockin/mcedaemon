@@ -64,9 +64,6 @@ int mced_non_root_clients;
 /* the size of a kernel MCE record in bytes */
 size_t mced_kernel_record_len;
 
-/* whether we force legacy socket output or not */
-int mced_legacy_socket;
-
 #if ENABLE_MCEDB
 /* global database handle */
 struct mce_database *mced_db;
@@ -82,11 +79,11 @@ static cmdline_string device = MCED_EVENTFILE;
 static cmdline_int max_interval_ms = MCED_MAX_INTERVAL;
 static cmdline_int min_interval_ms = MCED_MIN_INTERVAL;
 static cmdline_int mce_rate_limit = -1;
-static cmdline_string socketfile = NULL;
+static cmdline_string socketfile = MCED_SOCKETFILE_V2;
+static cmdline_string socketfile_compat = NULL;
 static cmdline_bool nosocket = 0;
 static cmdline_string socketgroup = NULL;
 static cmdline_mode_t socketmode = MCED_SOCKETMODE;
-static cmdline_bool use_v1_socket = 0;
 static cmdline_bool foreground = 0;
 static cmdline_string pidfile = MCED_PIDFILE;
 static cmdline_int clientmax = MCED_CLIENTMAX;
@@ -209,8 +206,8 @@ static struct cmdline_opt mced_opts[] = {
 	},
 	{
 		"O", "oldsocket",
-		CMDLINE_OPT_BOOL, &use_v1_socket,
-		"", "Make socket behavior compatible with mced v1.x"
+		CMDLINE_OPT_STRING, &socketfile_compat,
+		"", "Use the specified socket file for v1 compatible behavior"
 	},
 	#if ENABLE_DBUS
 	{
@@ -293,17 +290,9 @@ handle_cmdline(int *argc, const char ***argv)
 	if (mce_rate_limit <= 0) {
 		mce_rate_limit = -1;
 	}
-	if (use_v1_socket) {
-		mced_legacy_socket = 1;
-		if (socketfile == NULL) {
-			socketfile = MCED_SOCKETFILE_V1;
-		}
-	} else {
-		if (socketfile == NULL) {
-			socketfile = MCED_SOCKETFILE_V2;
-		}
+	if (socketfile_compat && socketfile_compat[0] == '\0') {
+		socketfile_compat = MCED_SOCKETFILE_V1;
 	}
-
 
 	return 0;
 }
@@ -1089,6 +1078,7 @@ main(int argc, const char *argv[])
 {
 	int mcelog_fd;
 	int sock_fd = -1; /* init to avoid a compiler warning */
+	int compat_sock_fd = -1;
 	int interval_ms;
 
 	/* learn who we really are */
@@ -1101,11 +1091,18 @@ main(int argc, const char *argv[])
 	/* close any extra file descriptors */
 	close_fds();
 
-	/* open our socket */
+	/* open our socket(s) */
 	if (!nosocket) {
 		sock_fd = open_socket(socketfile, socketmode, socketgroup);
 		if (sock_fd < 0) {
 			exit(EXIT_FAILURE);
+		}
+		if (socketfile_compat) {
+			compat_sock_fd = open_socket(socketfile_compat,
+			                             socketmode, socketgroup);
+			if (compat_sock_fd < 0) {
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
@@ -1170,11 +1167,12 @@ main(int argc, const char *argv[])
 	         mced_log_events ? "on" : "off");
 	interval_ms = max_interval_ms;
 	while (1) {
-		struct pollfd ar[2];
+		struct pollfd ar[3];
 		int r;
 		int nfds = 0;
 		int mce_idx = -1;
 		int sock_idx = -1;
+		int compat_sock_idx = -1;
 		int timed_out;
 
 		/* open the device file */
@@ -1194,6 +1192,12 @@ main(int argc, const char *argv[])
 			ar[nfds].events = POLLIN;
 			sock_idx = nfds;
 			nfds++;
+			if (socketfile_compat) {
+				ar[nfds].fd = compat_sock_fd;
+				ar[nfds].events = POLLIN;
+				compat_sock_idx = nfds;
+				nfds++;
+			}
 		}
 		if (max_interval_ms > 0) {
 			mced_debug(2, "DBG: next interval = %d msecs\n",
@@ -1248,22 +1252,40 @@ main(int argc, const char *argv[])
 		}
 
 		/* was it a new connection? */
-		if (sock_idx >= 0 && ar[sock_idx].revents) {
+		if ((sock_idx >= 0 && ar[sock_idx].revents)
+		 || (compat_sock_idx >= 0 && ar[compat_sock_idx].revents)) {
 			int cli_fd;
 			struct ucred creds;
 			char buf[32];
 			static int accept_errors;
+			int idx;
+			int fd;
+			int is_legacy_client;
+
+			/*
+			 * Prefer the new socket if forced to choose.
+			 * We'll get the old socket on the next loop.
+			 */
+			if (sock_idx >= 0 && ar[sock_idx].revents) {
+				is_legacy_client = 0;
+				idx = sock_idx;
+				fd = sock_fd;
+			} else {
+				is_legacy_client = 1;
+				idx = compat_sock_idx;
+				fd = compat_sock_fd;
+			}
 
 			/* this shouldn't happen */
-			if (!ar[sock_idx].revents & POLLIN) {
+			if (!ar[idx].revents & POLLIN) {
 				mced_log(LOG_WARNING,
 				    "odd, poll set flags 0x%x\n",
-				    ar[sock_idx].revents);
+				    ar[idx].revents);
 				continue;
 			}
 
 			/* accept and add to our lists */
-			cli_fd = ud_accept(sock_fd, &creds);
+			cli_fd = ud_accept(fd, &creds);
 			if (cli_fd < 0) {
 				mced_perror(LOG_ERR,
 				    "ERR: can't accept client");
@@ -1288,7 +1310,7 @@ main(int argc, const char *argv[])
 			fcntl(cli_fd, F_SETFD, FD_CLOEXEC);
 			snprintf(buf, sizeof(buf)-1, "%d[%d:%d]",
 				creds.pid, creds.uid, creds.gid);
-			mced_add_client(cli_fd, buf);
+			mced_add_client(cli_fd, buf, is_legacy_client);
 		}
 	}
 

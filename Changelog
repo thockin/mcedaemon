@@ -1,4 +1,9 @@
 %changelog
+* Tue Apr 13 2010  Tim Hockin <thockin@google.com>
+  - Change -O (--oldsocket) behavior to take an argument and open both the
+    old and new style sockets. [mced.c, mced.h, mced.8, rules.c]
+  - Bump to 2.0.1 for release.
+
 * Sat Feb 27 2010  Tim Hockin <thockin@google.com>
   - Rename examples to be valid config files.
 

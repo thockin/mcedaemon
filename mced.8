@@ -130,11 +130,11 @@ is not significant. Example:
 	%c=0 %v=0 %b=4 %s=0x12345678 %a=0xabcdef %m=0x00000000 %g=0x00000000
 	%t=8675309 %B=42
 .PP
-If the \-O (\--oldsocket) flag is specified, \fBmced\fP will be compatible
-with the socket behavior of \fBmced\fP version 1.x, including using
-\fI/var/run/mced.socket\fP as the default socket and falling back on the
-legacy data format.  The \-s (\--socketfile) flag always overrides the
-default socket path, regardless of the \-O flag.
+If the \-O (\--oldsocket) flag is specified, \fBmced\fP will retain
+backwards-compatible socket behavior of \fBmced\fP version 1.x.  In
+addition to the normal version 2.x socket, \fBmced\fP will open a second
+socket and report MCEs in the legacy data format.  This interface is
+considered deprecated but is retained for ease of migration.
 .PP
 \fBmced\fP will not close the client socket except in the case of a SIGHUP
 or \fBmced\fP exiting.
@@ -213,12 +213,14 @@ of \fBmced\fP, just the logging behavior. Setting this to 0 or less will
 disable rate limiting for these messages.  Using \-l (\--logevents) will
 override this option. (Default is \fI10\fP seconds.
 .TP
-.BI \-O "\fR, \fP" \--oldsocket
-This option forces \fBmced\fP to use the legacy socket path
-(\fI/var/run/mced.socket\fP) and data format (formatted as "%c %b %s %a %m
-%g %t %B\\n").  Use this if you have socket clients that require the
-\fBmced\fP version 1.x behavior.  Use of this option is discouraged, as
-new MCE fields are only available with the modern socket data format.
+.BI \-O "\fR, \fP" \--oldsocket " filename"
+This option forces \fBmced\fP to open a second socket using the
+legacy-style data format ("%c %b %s %a %m %g %t %B\\n").  Use this if you
+have socket clients that require the \fBmced\fP version 1.x behavior.  Use
+of this option is discouraged, as new MCE fields are only available with
+the modern socket data format.  Passing and empty string argument ("")
+will make \fBmced\fP use the default v1.x socket path
+(\fI/var/run/mced.socket\fP).
 .TP
 .BI \-p "\fR, \fP" \--pidfile " filename"
 This option changes the name of the pidfile to which \fBmced\fP writes.

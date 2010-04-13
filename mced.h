@@ -133,7 +133,6 @@ extern int mced_debug_level;
 extern int mced_log_events;
 extern int mced_non_root_clients;
 extern size_t mced_kernel_record_len;
-extern int mced_legacy_socket;
 extern int mced_log(int level, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_debug(int min_dbg_lvl, const char *fmt, ...) PRINTF_ARGS(2, 3);
 extern int mced_perror(int level, const char *str);
@@ -142,7 +141,7 @@ extern int mced_perror(int level, const char *str);
  * rules.c
  */
 extern int mced_read_conf(const char *confdir);
-extern int mced_add_client(int client, const char *origin);
+extern int mced_add_client(int client, const char *origin, int is_legacy);
 extern int mced_cleanup_rules(int do_detach);
 extern int mced_handle_mce(struct mce *mce);
 extern void mced_close_dead_clients(void);
