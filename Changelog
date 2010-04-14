@@ -1,4 +1,7 @@
 %changelog
+* Wed Apr 14 2010  Tim Hockin <thockin@google.com>
+  - Fix compiler warning in opt mode (craigb@google.com). [cmdline.c]
+
 * Tue Apr 13 2010  Tim Hockin <thockin@google.com>
   - Change -O (--oldsocket) behavior to take an argument and open both the
     old and new style sockets. [mced.c, mced.h, mced.8, rules.c]

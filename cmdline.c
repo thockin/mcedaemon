@@ -80,7 +80,7 @@ safe_streq(const char *lhs, const char *rhs)
 int
 cmdline_parse(int *argc, const char ***argv, const struct cmdline_opt *opts)
 {
-	int retval;
+	int retval = 0;
 	const char **new_argv;
 	int new_argc;
 	int found_dash_dash = 0;
