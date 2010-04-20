@@ -207,7 +207,7 @@ static struct cmdline_opt mced_opts[] = {
 	{
 		"O", "oldsocket",
 		CMDLINE_OPT_STRING, &socketfile_compat,
-		"", "Use the specified socket file for v1 compatible behavior"
+		"", "Use the specified v1-compatible socket file"
 	},
 	#if ENABLE_DBUS
 	{
