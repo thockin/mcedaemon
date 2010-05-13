@@ -122,10 +122,10 @@ domain socket (\fI/var/run/mced2.socket\fP by default).  Any application
 may connect to this socket.  Once connected, \fBmced\fP will send the text of
 all MCE events to the client.  Each event is sent on a single line,
 terminated by a newline ('\\n') character.  The data is formatted as a
-series of key=value pairs, where each key is one of the "%" expansions
-documented above (including the "%" character) and each key is a number
-(in decimal or hex format, depending on which datum).  The order of pairs
-is not significant. Example:
+series of space-delimited key=value pairs, where each key is one of the "%"
+expansions documented above (including the "%" character) and each value is a
+number (in decimal or hex format, depending on which datum).  The order of
+pairs is not significant. Example:
 .br
 	%c=0 %v=0 %b=4 %s=0x12345678 %a=0xabcdef %m=0x00000000 %g=0x00000000
 	%t=8675309 %B=42
@@ -245,7 +245,7 @@ to open. \fBmced\fP will retry the device at every polling interval.  See
 .TP
 .BI \-s "\fR, \fP" \--socketfile " filename"
 This option changes the name of the UNIX domain socket which \fBmced\fP opens.
-Default is \fI/var/run/mced/mced2.socket\fP.  See also \-O (\--oldsocket).
+Default is \fI/var/run/mced2.socket\fP.  See also \-O (\--oldsocket).
 .TP
 .BI \-S "\fR, \fP" \--nosocket " filename"
 This option tells \fBmced\fP not to open a UNIX domain socket.  This

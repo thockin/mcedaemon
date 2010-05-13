@@ -1,4 +1,7 @@
 %changelog
+* Wed May 12 2010  Tim Hockin <thockin@google.com>
+  - Fix man page nits (madsci@google.com). [mced.8]
+
 * Wed Apr 14 2010  Tim Hockin <thockin@google.com>
   - Fix compiler warning in opt mode (craigb@google.com). [cmdline.c]
 
