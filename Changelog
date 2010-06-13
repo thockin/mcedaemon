@@ -1,4 +1,7 @@
 %changelog
+* Sun Jun 13 2010  Tim Hockin <thockin@hockin.org>
+  - Bump to 2.0.4 for release.
+
 * Wed May 12 2010  Tim Hockin <thockin@google.com>
   - Fix man page nits (madsci@google.com). [mced.8]
 
