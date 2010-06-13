@@ -11,7 +11,7 @@ export TOPDIR
 ifneq ($(strip $(BUILD_CONFIG)),)
   ifeq ($(BUILD_CONFIG), $(wildcard $(BUILD_CONFIG)))
     ifeq ($(DID_LOAD_BUILD_CONFIG),)
-      $(info loading BUILD_CONFIG)
+      $(info loading $(BUILD_CONFIG))
     endif
     include $(BUILD_CONFIG)
   endif
