@@ -36,7 +36,7 @@ CFLAGS += $(shell pkg-config --cflags dbus-1 dbus-glib-1)
 LIBS += $(shell pkg-config --libs dbus-1 dbus-glib-1) -lpcre
 endif
 
-INSTPREFIX =
+INSTPREFIX = $(DESTDIR)
 BINDIR = $(INSTPREFIX)/usr/bin
 SBINDIR = $(INSTPREFIX)/usr/sbin
 MAN8DIR = $(INSTPREFIX)/usr/share/man/man8
