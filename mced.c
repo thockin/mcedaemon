@@ -860,7 +860,11 @@ do_pending_mces(int mce_fd)
 static int
 check_mcelog_poll(int mce_fd)
 {
-	//FIXME: on a machine with a lot of errors, this loops forever!
+	if (!CHECK_FOR_NON_POLL_KERNELS) {
+	  return 1;
+	}
+
+	// On a machine with a lot of errors, this loops forever!
 	while (1) {
 		int r;
 		struct pollfd ar[1];

@@ -16,6 +16,7 @@ PROFILE ?= 0			# boolean
 ENABLE_MCEDB ?= 0		# boolean (currently not checked in)
 ENABLE_DBUS ?= 0		# boolean
 ENABLE_FAKE_DEV_MCELOG ?= 0	# boolean
+CHECK_FOR_NON_POLL_KERNELS ?= 0 # boolean
 
 # include the generic rules
 include $(TOPDIR)/Makerules.mk
@@ -28,6 +29,7 @@ CWARNS += -Wundef -Wshadow -Wno-strict-aliasing
 CPPFLAGS += -DENABLE_MCEDB=$(ENABLE_MCEDB)
 CPPFLAGS += -DENABLE_DBUS=$(ENABLE_DBUS)
 CPPFLAGS += -DENABLE_FAKE_DEV_MCELOG=$(ENABLE_FAKE_DEV_MCELOG)
+CPPFLAGS += -DCHECK_FOR_NON_POLL_KERNELS=$(CHECK_FOR_NON_POLL_KERNELS)
 ifneq "$(strip $(ENABLE_MCEDB))" "0"
 LIBS += -ldb
 endif
