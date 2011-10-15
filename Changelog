@@ -1,4 +1,7 @@
 %changelog
+* Fri Oct 14 2011  Tim Hockin <thockin@hockin.org>
+  - Fix innocuous buffer overflow (uds_addr.sun_path). [ud_socket.c]
+
 * Sun Jun 13 2010  Tim Hockin <thockin@hockin.org>
   - Bump to 2.0.4 for release.
 
