@@ -34,7 +34,8 @@ ud_create_socket(const char *name)
 	/* setup address struct */
 	memset(&uds_addr, 0, sizeof(uds_addr));
 	uds_addr.sun_family = AF_UNIX;
-	strncpy(uds_addr.sun_path, name, sizeof(uds_addr.sun_path));
+	strncpy(uds_addr.sun_path, name, sizeof(uds_addr.sun_path)-1);
+	uds_addr.sun_path[sizeof(uds_addr.sun_path)-1] = '\0';
 	
 	/* bind it to the socket */
 	r = bind(fd, (struct sockaddr *)&uds_addr, sizeof(uds_addr));
