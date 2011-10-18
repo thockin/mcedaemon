@@ -23,6 +23,12 @@ ud_create_socket(const char *name)
 	int r;
 	struct sockaddr_un uds_addr;
 
+	/* sanity check */
+	if (strlen(name) >= sizeof(uds_addr.sun_path)) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+
 	/* JIC */
 	unlink(name);
 
@@ -35,8 +41,7 @@ ud_create_socket(const char *name)
 	memset(&uds_addr, 0, sizeof(uds_addr));
 	uds_addr.sun_family = AF_UNIX;
 	strncpy(uds_addr.sun_path, name, sizeof(uds_addr.sun_path)-1);
-	uds_addr.sun_path[sizeof(uds_addr.sun_path)-1] = '\0';
-	
+
 	/* bind it to the socket */
 	r = bind(fd, (struct sockaddr *)&uds_addr, sizeof(uds_addr));
 	if (r < 0) {
