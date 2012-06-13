@@ -61,7 +61,7 @@ endif
 mce_listen_OBJS = $(mce_listen_SRCS:.c=.o)
 
 mce_decode_SRCS = mce_decode.c
-mce_decode_OBJS = $(mce_listen_SRCS:.c=.o)
+mce_decode_OBJS = $(mce_decode_SRCS:.c=.o)
 
 mcelog_faker_SRCS = mcelog_faker.c
 mcelog_faker_OBJS = $(mcelog_faker_SRCS:.c=.o)
