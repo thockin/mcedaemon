@@ -66,7 +66,7 @@ mce_decode_OBJS = $(mce_decode_SRCS:.c=.o)
 mcelog_faker_SRCS = mcelog_faker.c
 mcelog_faker_OBJS = $(mcelog_faker_SRCS:.c=.o)
 
-MAN8 = mced.8 mce_listen.8 mce_decode.8
+MAN8 = mced.8 mce_listen.8
 MAN8GZ = $(MAN8:.8=.8.gz)
 
 #
