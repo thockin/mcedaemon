@@ -1,3 +1,8 @@
+`mced` is a very small daemon which monitors /dev/mcelog for machine check events, and then reports them to other applications.
+
+Machine checks can indicate failing hardware, system overheats, bad DIMMs or other problems. Some MCEs are 'fatal' and can't generally be survived. Many, however are not fatal, and mced can help you detect and report them more accurately.
+
+
 Notes:
 
 * Kernels prior to 2.6.22 do not support poll() on /dev/mcelog.  In that
