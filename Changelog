@@ -1,4 +1,7 @@
 %changelog
+* Thu Mar 5 2015  Tim Hockin <thockin@hockin.org>
+  - Bump to 2.0.5 for release.
+
 * Fri Oct 14 2011  Tim Hockin <thockin@hockin.org>
   - Fix innocuous buffer overflow (uds_addr.sun_path). [ud_socket.c]
   - Add a compile option to disable the check for poll() support.
