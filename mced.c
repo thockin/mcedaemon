@@ -1281,7 +1281,7 @@ main(int argc, const char *argv[])
 			}
 
 			/* this shouldn't happen */
-			if (!ar[idx].revents & POLLIN) {
+			if (!(ar[idx].revents & POLLIN)) {
 				mced_log(LOG_WARNING,
 				    "odd, poll set flags 0x%x\n",
 				    ar[idx].revents);
