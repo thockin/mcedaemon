@@ -38,10 +38,10 @@ CFLAGS += $(shell pkg-config --cflags dbus-1 dbus-glib-1)
 LIBS += $(shell pkg-config --libs dbus-1 dbus-glib-1) -lpcre
 endif
 
-INSTPREFIX = $(DESTDIR)
-BINDIR = $(INSTPREFIX)/usr/bin
-SBINDIR = $(INSTPREFIX)/usr/sbin
-MAN8DIR = $(INSTPREFIX)/usr/share/man/man8
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+SBINDIR = $(PREFIX)/sbin
+MAN8DIR = $(PREFIX)/share/man/man8
 
 SBIN_PROGS = mced
 BIN_PROGS = mce_listen mce_decode
@@ -102,12 +102,12 @@ man: $(MAN8)
 	for a in $^; do gzip -f -9 -c $$a > $$a.gz; done
 
 install: $(PROGS) man
-	mkdir -p $(SBINDIR)
-	mkdir -p $(BINDIR)
-	install -m 750 mced $(SBINDIR)
-	install -m 755 mce_listen $(BINDIR)
-	mkdir -p $(MAN8DIR)
-	install -m 644 $(MAN8GZ) $(MAN8DIR)
+	mkdir -p $(DESTDIR)$(SBINDIR)
+	mkdir -p $(DESTDIR)$(BINDIR)
+	install -m 750 mced $(DESTDIR)$(SBINDIR)
+	install -m 755 mce_listen $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(MAN8DIR)
+	install -m 644 $(MAN8GZ) $(DESTDIR)$(MAN8DIR)
 
 DISTTMP=/tmp
 dist:
