@@ -102,12 +102,12 @@ man: $(MAN8)
 	for a in $^; do gzip -f -9 -c $$a > $$a.gz; done
 
 install: $(PROGS) man
-	mkdir -p $(DESTDIR)$(SBINDIR)
-	mkdir -p $(DESTDIR)$(BINDIR)
-	install -m 750 mced $(DESTDIR)$(SBINDIR)
-	install -m 755 mce_listen $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(MAN8DIR)
-	install -m 644 $(MAN8GZ) $(DESTDIR)$(MAN8DIR)
+	mkdir -p $(SBINDIR)
+	mkdir -p $(BINDIR)
+	install -m 750 mced $(SBINDIR)
+	install -m 755 mce_listen $(BINDIR)
+	mkdir -p $(MAN8DIR)
+	install -m 644 $(MAN8GZ) $(MAN8DIR)
 
 DISTTMP=/tmp
 dist:
