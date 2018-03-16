@@ -86,6 +86,8 @@ struct kernel_mce {
 	uint32_t socketid;	/* cpu socket (2.6.31+) */
 	uint32_t apicid;	/* cpu initial APIC ID (2.6.31+) */
 	uint64_t mcgcap;	/* MCGCAP (2.6.31+) */
+	uint64_t synd;		/* MCA_SYND MSR: only valid on SMCA systems */
+	uint64_t ipid;		/* MCA_IPID MSR: only valid on SMCA systems */
 } __attribute__ ((packed));
 
 /* ioctl() calls for /dev/mcelog */
