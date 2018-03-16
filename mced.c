@@ -446,6 +446,38 @@ clean_exit(int sig)
 }
 
 static void
+clean_exit_with_killer(int signum, siginfo_t *siginfo,
+                       void __attribute__((unused)) *context) {
+	char fname[255];
+	char cmdline[1023];
+	int cmdline_success = 0;
+	mced_log(LOG_NOTICE, "caught signal %d\n", signum);
+	snprintf(fname, sizeof(fname)-1, "/proc/%u/cmdline", siginfo->si_pid);
+	FILE *cmdline_file = fopen(fname, "r");
+
+	if (cmdline_file) {
+		if (fgets(cmdline, 1023, cmdline_file)) {
+			cmdline_success = 1;
+		}
+		fclose(cmdline_file);
+	}
+
+	if (cmdline_success) {  // file successfully read
+		mced_log(
+			LOG_NOTICE,
+			"killed by process with pid %u and command line %.1022s\n",
+			siginfo->si_pid,
+			cmdline);
+	} else {
+		mced_log(
+			LOG_NOTICE,
+			"killed by process with pid %u and unknown command line\n",
+			siginfo->si_pid);
+	}
+	clean_exit_with_status(EXIT_SUCCESS);
+}
+
+static void
 reload_conf(int sig __attribute__((unused)))
 {
 	mced_log(LOG_NOTICE, "reloading configuration\n");
@@ -1147,8 +1179,15 @@ main(int argc, const char *argv[])
 	signal(SIGHUP, reload_conf);
 	signal(SIGINT, clean_exit);
 	signal(SIGQUIT, clean_exit);
-	signal(SIGTERM, clean_exit);
 	signal(SIGPIPE, SIG_IGN);
+
+	// Also handle SIGTERM, but we want the siginfo_t from it.
+	struct sigaction sigterm_action = {
+		.sa_sigaction = clean_exit_with_killer,
+		.sa_flags = SA_SIGINFO,
+	};
+
+	sigaction(SIGTERM, &sigterm_action, 0);
 
 	/* read in our configuration */
 	if (mced_read_conf(confdir) < 0) {
