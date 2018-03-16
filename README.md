@@ -15,11 +15,11 @@ Notes:
   identify crashes that might be related to MCEs.
 
 * mced does not try to decode MCEs.  If you want that, you should try
-  Andi Kleen's mcelog tool (http://freshmeat.net/projects/mcelog/) or the
+  Andi Kleen's mcelog tool (https://www.mcelog.org/) or the
   simple generic MCE decoder included in this package (mce_decode).
 
-* The latest code for this project can be found at the googlecode site:
-  	http://mcedaemon.googlecode.com
+* The latest code for this project can be found at the github site:
+  	https://github.com/thockin/mcedaemon
   The mced-devel mailing list is where development discussions and patches
   get sent:
   	http://groups.google.com/group/mced-devel
