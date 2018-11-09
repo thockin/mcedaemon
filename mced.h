@@ -89,6 +89,7 @@ struct kernel_mce {
 	uint64_t synd;		/* MCA_SYND MSR: only valid on SMCA systems */
 	uint64_t ipid;		/* MCA_IPID MSR: only valid on SMCA systems */
 	uint64_t ppin;		/* Protected Processor Inventory Number */
+	uint32_t microcode;	/* Microcode revision */
 } __attribute__ ((packed));
 
 /* ioctl() calls for /dev/mcelog */
