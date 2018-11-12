@@ -584,6 +584,8 @@ kmce_to_mce(struct kernel_mce *kmce, struct mce *mce)
 	mce->mci_status = kmce->status;
 	mce->mci_address = kmce->addr;
 	mce->mci_misc = kmce->misc;
+	mce->mci_synd = kmce->synd;
+	mce->mci_ipid = kmce->ipid;
 	mce->mcg_status = kmce->mcgstatus;
 	mce->tsc = kmce->tsc;
 	mce->cs = kmce->cs;
