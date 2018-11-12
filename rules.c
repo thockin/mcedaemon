@@ -720,6 +720,8 @@ do_v2_client_rule(struct rule *rule, struct mce *mce)
 		 " %%s=0x%016llx"		// mci_status
 		 " %%a=0x%016llx"		// mci_address
 		 " %%m=0x%016llx"		// mci_misc
+		 " %%y=0x%016llx"		// mci_synd
+		 " %%i=0x%016llx"		// mci_ipid
 		 " %%g=0x%016llx"		// mcg_status
 		 " %%G=0x%08lx"			// mcg_cap
 		 " %%t=0x%016llx"		// time
@@ -734,6 +736,8 @@ do_v2_client_rule(struct rule *rule, struct mce *mce)
 		 (unsigned long long)mce->mci_status,
 		 (unsigned long long)mce->mci_address,
 		 (unsigned long long)mce->mci_misc,
+		 (unsigned long long)mce->mci_synd,
+		 (unsigned long long)mce->mci_ipid,
 		 (unsigned long long)mce->mcg_status,
 		 (unsigned long)mce->mcg_cap,
 		 (unsigned long long)mce->time,
@@ -786,6 +790,8 @@ safe_write(int fd, const char *buf, int len)
  * 	%s	- MCi status
  * 	%a	- MCi address
  * 	%m	- MCi misc
+ * 	%y	- MCi synd
+ * 	%i	- MCi ipid
  * 	%g	- MCG status
  * 	%G	- MCG capabilities
  * 	%t	- time
@@ -852,6 +858,16 @@ parse_cmd(const char *cmd, struct mce *mce)
 				used += snprintf(buf+used, size,
 				    "0x%016llx",
 				    (unsigned long long)mce->mci_misc);
+			} else if (*p == 'y') {
+				/* mci_synd */
+				used += snprintf(buf+used, size,
+				    "0x%016llx",
+				    (unsigned long long)mce->mci_synd);
+			} else if (*p == 'i') {
+				/* mci_ipid */
+				used += snprintf(buf+used, size,
+				    "0x%016llx",
+				    (unsigned long long)mce->mci_ipid);
 			} else if (*p == 'g') {
 				/* mcg_status */
 				used += snprintf(buf+used, size,

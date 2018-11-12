@@ -105,6 +105,8 @@ struct mce {
 	uint64_t mci_status;	/* MCi_STATUS */
 	uint64_t mci_address;	/* MCi_ADDR */
 	uint64_t mci_misc;	/* MCi_MISC */
+	uint64_t mci_synd;	/* MCi_SYND (Syndrome; SMCA-only) */
+	uint64_t mci_ipid;	/* MCi_IPID (IP Identification; SMCA-only) */
 	uint64_t mcg_status;	/* MCG_STATUS */
 	uint64_t tsc;		/* CPU timestamp counter */
 	uint64_t time;		/* MCED timestamp (usecs since epoch) */
@@ -119,7 +121,7 @@ struct mce {
 	uint8_t  bank;		/* MC bank */
 	int8_t   vendor;	/* CPU vendor (enum cpu_vendor) */
 } __attribute__ ((packed));
-#define MCE_STRUCT_VER	1
+#define MCE_STRUCT_VER	2
 
 /* bits from the MCi_STATUS register */
 #define MCI_STATUS_OVER		(1ULL<<62)	/* errors overflowed */
