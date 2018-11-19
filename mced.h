@@ -121,7 +121,6 @@ struct mce {
 	uint8_t  bank;		/* MC bank */
 	int8_t   vendor;	/* CPU vendor (enum cpu_vendor) */
 } __attribute__ ((packed));
-#define MCE_STRUCT_VER	2
 
 /* bits from the MCi_STATUS register */
 #define MCI_STATUS_OVER		(1ULL<<62)	/* errors overflowed */
