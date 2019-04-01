@@ -97,7 +97,7 @@ ud_connect(const char *name)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	sprintf(addr.sun_path, "%s", name);
+	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", name);
 
 	r = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (r < 0) {
