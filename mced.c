@@ -64,6 +64,12 @@ int mced_non_root_clients;
 /* the size of a kernel MCE record in bytes */
 size_t mced_kernel_record_len;
 
+/* how many bytes of kernel record to copy */
+size_t mced_copy_len;
+
+/* how many bytes of mce structure to zero, if kernel record is smaller */
+size_t mced_zero_len;
+
 #if ENABLE_MCEDB
 /* global database handle */
 struct mce_database *mced_db;
@@ -876,12 +882,17 @@ do_pending_mces(int mce_fd)
 			/* handle all the new MCEs */
 			for (i = 0; i < nmces; i++) {
 				struct kernel_mce kmce;
+				void *src, *dst;
 				rate_limit_mces();
 				/* The assumption is that newer versions of
 				 * 'struct kernel_mce' are guaranteed to be
-				 * supersets of older versions. */
-				memcpy(&kmce, &buf[i*mced_kernel_record_len],
-				       mced_kernel_record_len);
+				 * supersets of older versions.  Only copy
+				 * the portion of the structure that we
+				 * currently know about, and zero the rest. */
+				src = &buf[i*mced_kernel_record_len];
+				dst = &kmce;
+				memcpy(dst, src, mced_copy_len);
+				memset(dst + mced_copy_len, 0, mced_zero_len);
 				do_one_mce(&kmce);
 			}
 		}
@@ -1030,16 +1041,29 @@ init_kernel_mce_interface(int mce_fd)
 	 * If the kernel grew 'struct mce' we will catch it here.  If they
 	 * simply changed the meaning of fields (hopefully only reserved
 	 * fields), then we will not catch it.  Let's hope they don't do
-	 * this.
+	 * this.  If the kernel declaration is larger than our declaration,
+	 * then we only want to copy the portion we know about.  If the
+	 * kernel declaration is smaller (an older kernel), then we want
+	 * to copy all of the kernel's data, but zero out the remainder
+	 * of our structure.
 	 */
-	if (mced_kernel_record_len > sizeof(struct kernel_mce)) {
+	if (mced_kernel_record_len >= sizeof(struct kernel_mce)) {
+		mced_copy_len = sizeof(struct kernel_mce);
+		mced_zero_len = 0;
+	} else {
+		mced_copy_len = mced_kernel_record_len;
+		mced_zero_len = sizeof(struct kernel_mce) - mced_kernel_record_len;
+	}
+
+	if (mced_kernel_record_len != sizeof(struct kernel_mce)) {
 		static int printed_msg;
 		if (!printed_msg) {
 			printed_msg = 1;
-			mced_log(LOG_ERR, "ERR: kernel MCE record size (%zd) "
-			         "is unsupported\n", mced_kernel_record_len);
+			mced_log(LOG_WARNING,
+				 "kernel/mced record mismatch (%zd/%zd)\n",
+				 mced_kernel_record_len,
+				 sizeof(struct kernel_mce));
 		}
-		return -1;
 	}
 	return 0;
 }

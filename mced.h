@@ -90,7 +90,7 @@ struct kernel_mce {
 	uint64_t ipid;		/* MCA_IPID MSR: only valid on SMCA systems */
 	uint64_t ppin;		/* Protected Processor Inventory Number */
 	uint32_t microcode;	/* Microcode revision */
-} __attribute__ ((packed));
+};
 
 /* ioctl() calls for /dev/mcelog */
 #define MCE_GET_RECORD_LEN   _IOR('M', 1, int)
@@ -120,7 +120,7 @@ struct mce {
 	uint16_t cs;		/* CPU code segment */
 	uint8_t  bank;		/* MC bank */
 	int8_t   vendor;	/* CPU vendor (enum cpu_vendor) */
-} __attribute__ ((packed));
+};
 
 /* bits from the MCi_STATUS register */
 #define MCI_STATUS_OVER		(1ULL<<62)	/* errors overflowed */
