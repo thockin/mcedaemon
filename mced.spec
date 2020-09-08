@@ -14,15 +14,16 @@
 
 # Don't build debuginfo packages.
 %define debug_package %{nil}
+%define version 2.0.5
 
 Name: mcedaemon
 Epoch:   1
-Version: 2.0.5
+Version: %{version}
 Release: g1%{?dist}
-Summary: google-mced-daemon
-License: ASL 2.0
+Summary: mced in particular watches for machine check exceptions from the system.
+License: GPL2
 Url: https://github.com/thockin/mcedaemon
-Source0: mcedaemon-2.0.5.tar.gz
+Source0: mcedaemon-%{version}.tar.gz
 
 BuildArch: %{_arch}
 
