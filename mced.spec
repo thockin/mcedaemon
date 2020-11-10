@@ -16,12 +16,11 @@
 
 # Don't build debuginfo packages.
 %define debug_package %{nil}
-%define version 2.0.5
 
 Name: mcedaemon
 Epoch:   1
 Version: %{version}
-Release: 1%{?dist}
+Release: %{revision}%{?dist}
 Summary: mced watches the system for machine check exceptions.
 License: GPL2
 Url: https://github.com/thockin/mcedaemon
@@ -35,7 +34,7 @@ mced is a very small daemon which monitors /dev/mcelog for machine check events,
 %autosetup
 
 %build
-make
+make STATIC=1
 
 %install
 install -d %{buildroot}%{_bindir}
