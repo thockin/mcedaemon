@@ -6,6 +6,7 @@ BUILD_CONFIG = $(TOPDIR)/BUILD_CONFIG
 
 # project version
 PRJ_VERSION = 2.0.5
+PRJ_REVISION = 1
 
 # assign build options default values
 # Use '?=' variable assignment so ENV variables can be used.
@@ -37,6 +38,7 @@ ifneq "$(strip $(ENABLE_DBUS))" "0"
 CFLAGS += $(shell pkg-config --cflags dbus-1 dbus-glib-1)
 LIBS += $(shell pkg-config --libs dbus-1 dbus-glib-1) -lpcre
 endif
+RPM_ARCH += $(shell uname -m)
 
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
@@ -111,16 +113,37 @@ install: $(PROGS) man
 
 DISTTMP=/tmp
 dist:
-	rm -rf $(DISTTMP)/mced-$(PRJ_VERSION)
-	mkdir -p $(DISTTMP)/mced-$(PRJ_VERSION)
-	cp -a * $(DISTTMP)/mced-$(PRJ_VERSION)
-	find $(DISTTMP)/mced-$(PRJ_VERSION) -type d -name .svn | xargs rm -rf
-	make -C $(DISTTMP)/mced-$(PRJ_VERSION) distclean
-	tar -C $(DISTTMP) -zcvf mced-$(PRJ_VERSION).tar.gz mced-$(PRJ_VERSION)
-	rm -rf $(DISTTMP)/mced-$(PRJ_VERSION)
+	rm -rf $(DISTTMP)/mcedaemon-$(PRJ_VERSION)
+	mkdir -p $(DISTTMP)/mcedaemon-$(PRJ_VERSION)
+	cp -a * $(DISTTMP)/mcedaemon-$(PRJ_VERSION)
+	find $(DISTTMP)/mcedaemon-$(PRJ_VERSION) -type d -name .svn | xargs rm -rf
+	make -C $(DISTTMP)/mcedaemon-$(PRJ_VERSION) distclean
+	tar -C $(DISTTMP) -zcvf mcedaemon-$(PRJ_VERSION).tar.gz mcedaemon-$(PRJ_VERSION)
+	rm -rf $(DISTTMP)/mcedaemon-$(PRJ_VERSION)
 
 clean:
 	$(RM) $(PROGS) $(MAN8GZ) *.o auto.*
+
+RPMROOT=$(DISTTMP)/mcedaemon-rpm-$(PRJ_VERSION)
+rpm: dist
+	rm -rf $(RPMROOT)
+	mkdir -p $(RPMROOT)/SOURCES/
+	cp mcedaemon-$(PRJ_VERSION).tar.gz $(RPMROOT)/SOURCES/
+	rpmbuild -bb --define='_topdir $(RPMROOT)' \
+		--define='version $(PRJ_VERSION)' --define='revision $(PRJ_REVISION)' ./mced.spec
+	mv $(RPMROOT)/RPMS/$(RPM_ARCH)/mcedaemon-$(PRJ_VERSION)-$(PRJ_REVISION).$(RPM_ARCH).rpm ./
+	rm -rf $(RPMROOT)
+
+DEBROOT=$(DISTTMP)/mcedaemon-deb-$(PRJ_VERSION)
+debian: dist
+	rm -rf $(DEBROOT)
+	mkdir -p $(DEBROOT)
+	cp mcedaemon-$(PRJ_VERSION).tar.gz $(DEBROOT)/
+	tar -C $(DEBROOT) -xvf mcedaemon-$(PRJ_VERSION).tar.gz
+	make -C $(DEBROOT)/mcedaemon-$(PRJ_VERSION) STATIC=1
+	cd $(DEBROOT)/mcedaemon-$(PRJ_VERSION) && ./make_deb.sh $(PRJ_VERSION) $(PRJ_REVISION)
+	cp $(DEBROOT)/mcedaemon-$(PRJ_VERSION)/mcedaemon_$(PRJ_VERSION)*.deb ./
+	rm -rf $(DEBROOT)
 
 distclean:
 	$(RM) .depend
